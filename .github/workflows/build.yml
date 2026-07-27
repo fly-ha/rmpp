@@ -9,8 +9,8 @@ jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - run: dotnet restore Rmpp.sln
@@ -31,8 +31,8 @@ jobs:
     env:
       RMPP_CI_VERSION: 0.9.0-ci.${{ github.run_number }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Build installer and portable distribution
@@ -42,7 +42,7 @@ jobs:
         shell: pwsh
         run: ./build/Verify-Distribution.ps1 -Version $env:RMPP_CI_VERSION -VerifyInstaller
       - name: Upload clean-environment evidence
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: distribution-smoke-${{ matrix.os }}
           if-no-files-found: error

@@ -1,0 +1,55 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  windows-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Resolve version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          "RMPP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Verify release gates
+        shell: pwsh
+        run: ./build/Verify-ReleaseGates.ps1 -Version $env:RMPP_VERSION
+      - name: Restore, build, and test
+        shell: pwsh
+        run: |
+          dotnet restore Rmpp.sln
+          dotnet build Rmpp.sln -c Release --no-restore
+          dotnet test Rmpp.sln -c Release --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/coverage
+      - name: Automated release checks
+        shell: pwsh
+        run: |
+          ./build/Verify-Licenses.ps1
+          ./build/Run-PerformanceBenchmarks.ps1
+          ./build/Verify-OfflineRuntime.ps1
+          ./build/Verify-Privacy.ps1
+      - name: Build installer and portable ZIP
+        shell: pwsh
+        run: |
+          ./build/Build-Distribution.ps1 -Version $env:RMPP_VERSION
+          ./build/Verify-Distribution.ps1 -Version $env:RMPP_VERSION -VerifyInstaller
+      - name: Upload release artifacts
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = Get-ChildItem "artifacts/distribution/$env:RMPP_VERSION" -File | Where-Object Extension -in @('.exe', '.zip', '.sha256') | ForEach-Object FullName
+          gh release create "${{ github.ref_name }}" $files --verify-tag --generate-notes --title "RMPP $env:RMPP_VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rmpp-${{ env.RMPP_VERSION }}-windows
+          path: artifacts/distribution/${{ env.RMPP_VERSION }}/*

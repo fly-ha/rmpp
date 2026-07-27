@@ -12,8 +12,8 @@ jobs:
   windows-release:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-dotnet@v6.0.0
         with:
           global-json-file: global.json
       - name: Resolve version
@@ -49,7 +49,7 @@ jobs:
         run: |
           $files = Get-ChildItem "artifacts/distribution/$env:RMPP_VERSION" -File | Where-Object Extension -in @('.exe', '.zip', '.sha256') | ForEach-Object FullName
           gh release create "${{ github.ref_name }}" $files --verify-tag --generate-notes --title "RMPP $env:RMPP_VERSION"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.1
         with:
           name: rmpp-${{ env.RMPP_VERSION }}-windows
           path: artifacts/distribution/${{ env.RMPP_VERSION }}/*

@@ -39,6 +39,13 @@ if (Test-Path -LiteralPath (Join-Path $repoRoot "THIRD-PARTY-NOTICES.md")) {
     Copy-Item -LiteralPath (Join-Path $repoRoot "THIRD-PARTY-NOTICES.md") -Destination $publishRoot -Force
 }
 Copy-Item -LiteralPath (Join-Path $repoRoot "samples") -Destination (Join-Path $publishRoot "samples") -Recurse -Force
+
+# 干净环境尚未恢复仅供安装器构建使用的包；先恢复，确保许可收集和后续编译使用同一固定版本。
+dotnet restore installer/InstallerTools.csproj --force
+if ($LASTEXITCODE -ne 0) {
+    throw "Could not restore the build-only Inno Setup compiler package."
+}
+
 & (Join-Path $PSScriptRoot "Collect-ThirdPartyLicenses.ps1") -DestinationDirectory (Join-Path $publishRoot "licenses")
 & (Join-Path $PSScriptRoot "Verify-Licenses.ps1") -PublishDirectory $publishRoot
 
@@ -75,10 +82,6 @@ finally {
 }
 
 if (-not $SkipInstaller) {
-    dotnet restore installer/InstallerTools.csproj
-    if ($LASTEXITCODE -ne 0) {
-        throw "Could not restore the build-only Inno Setup compiler package."
-    }
     $nugetRoot = if ($env:NUGET_PACKAGES) { $env:NUGET_PACKAGES } else { Join-Path $env:USERPROFILE ".nuget\packages" }
     $packagedCompiler = Join-Path $nugetRoot "tools.innosetup\6.4.3\tools\ISCC.exe"
     if (-not (Test-Path -LiteralPath $packagedCompiler)) {

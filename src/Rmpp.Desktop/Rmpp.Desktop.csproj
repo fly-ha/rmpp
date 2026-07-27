@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Rmpp.Desktop</RootNamespace>
+    <AssemblyName>Rmpp.Desktop</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Rmpp.Domain\Rmpp.Domain.csproj" />
+    <ProjectReference Include="..\Rmpp.Application\Rmpp.Application.csproj" />
+    <ProjectReference Include="..\Rmpp.Rendering\Rmpp.Rendering.csproj" />
+    <ProjectReference Include="..\Rmpp.Infrastructure\Rmpp.Infrastructure.csproj" />
+    <ProjectReference Include="..\Rmpp.Printing.Windows\Rmpp.Printing.Windows.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Help\**\*.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>help\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Rmpp.Infrastructure</RootNamespace>
+    <AssemblyName>Rmpp.Infrastructure</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <PackageReference Include="Docnet.Core" />
+    <PackageReference Include="DocumentFormat.OpenXml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Rmpp.Domain\Rmpp.Domain.csproj" />
+    <ProjectReference Include="..\Rmpp.Application\Rmpp.Application.csproj" />
+    <ProjectReference Include="..\Rmpp.Rendering\Rmpp.Rendering.csproj" />
+  </ItemGroup>
+</Project>

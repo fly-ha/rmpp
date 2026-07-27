@@ -1,0 +1,22 @@
+<UserControl x:Class="Rmpp.Desktop.Views.DataPreviewPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="True"
+             KeyboardNavigation.TabNavigation="Contained">
+  <DockPanel Margin="8">
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
+      <Button Content="上一行" Command="{Binding PreviousRowCommand}" Margin="0,0,4,0" KeyboardNavigation.TabIndex="0" />
+      <Button Content="下一行" Command="{Binding NextRowCommand}" Margin="0,0,12,0" KeyboardNavigation.TabIndex="1" />
+      <TextBox x:Name="SearchInput" Width="150" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="搜索记录"
+               KeyboardNavigation.TabIndex="2" AutomationProperties.Name="{DynamicResource DataSearch}" />
+      <Button Content="查找" Command="{Binding FindNextCommand}" Margin="4,0,0,0" KeyboardNavigation.TabIndex="3" />
+      <TextBox Width="45" Text="{Binding RangeStart}" Margin="12,0,0,0" ToolTip="起始行" KeyboardNavigation.TabIndex="4" AutomationProperties.Name="起始记录" />
+      <TextBlock Text="-" VerticalAlignment="Center" />
+      <TextBox Width="45" Text="{Binding RangeEnd}" ToolTip="结束行" KeyboardNavigation.TabIndex="5" AutomationProperties.Name="结束记录" />
+      <Button Content="选择范围" Command="{Binding ApplyRangeCommand}" Margin="4,0,0,0" KeyboardNavigation.TabIndex="6" />
+    </StackPanel>
+    <ListBox x:Name="FieldsList" ItemsSource="{Binding Columns}" DisplayMemberPath="Name" PreviewMouseMove="OnFieldMouseMove" Margin="0,8,0,0"
+             KeyboardNavigation.TabIndex="7" AutomationProperties.Name="{DynamicResource DataFieldList}" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusText}" Margin="0,8,0,0" />
+  </DockPanel>
+</UserControl>

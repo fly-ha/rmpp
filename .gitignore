@@ -1,0 +1,36 @@
+## Build outputs
+bin/
+obj/
+TestResults/
+artifacts/
+coverage/
+
+## IDE
+.vs/
+.idea/
+*.user
+*.suo
+
+## Local application data and temporary design files
+*.db
+*.db-shm
+*.db-wal
+*.rmpp-recovery
+local-data/
+
+## Generated docs and packaging
+publish/
+installer-output/
+
+## Local documentation, planning, and reference material
+*.md
+!/.github/PULL_REQUEST_TEMPLATE.md
+!/src/Rmpp.Desktop/Help/**/*.md
+docs/
+openspec/
+help.zip
+
+## Codex/OpenSpec/GitNexus local state
+.codex/
+.openspec-cache/
+.gitnexus/

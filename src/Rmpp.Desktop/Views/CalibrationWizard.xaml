@@ -1,0 +1,24 @@
+<Window x:Class="Rmpp.Desktop.Views.CalibrationWizard"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="打印机校准向导" Width="620" Height="560" WindowStartupLocation="CenterOwner"
+        KeyboardNavigation.TabNavigation="Cycle">
+  <ScrollViewer><StackPanel Margin="16">
+    <TextBlock Text="1. 选择打印机和介质" FontWeight="Bold"/>
+    <ComboBox x:Name="PrinterCombo" ItemsSource="{Binding Printers}" SelectedItem="{Binding SelectedPrinter}" DisplayMemberPath="Identity.DisplayName" Margin="0,6"
+              KeyboardNavigation.TabIndex="0" AutomationProperties.Name="{DynamicResource PrinterSelection}"/>
+    <ComboBox x:Name="MediaCombo" ItemsSource="{Binding Media}" SelectedItem="{Binding SelectedMedia}" DisplayMemberPath="DisplayName" Margin="0,6"
+              KeyboardNavigation.TabIndex="1" AutomationProperties.Name="{DynamicResource MediaSelection}"/>
+    <Button Content="2. 打印本地校准页" Command="{Binding PrintTestPageCommand}" Margin="0,8" KeyboardNavigation.TabIndex="2"/>
+    <TextBlock Text="3. 输入纸面测量值（毫米 / 度）" FontWeight="Bold" Margin="0,10,0,4"/>
+    <UniformGrid x:Name="MeasurementGrid" Columns="4" AutomationProperties.Name="{DynamicResource CalibrationMeasurements}">
+      <TextBlock Text="目标宽"/><TextBox Text="{Binding TargetHorizontalMm}" KeyboardNavigation.TabIndex="3" AutomationProperties.Name="目标水平距离"/><TextBlock Text="实测宽"/><TextBox Text="{Binding MeasuredHorizontalMm}" KeyboardNavigation.TabIndex="4" AutomationProperties.Name="实测水平距离"/>
+      <TextBlock Text="目标高"/><TextBox Text="{Binding TargetVerticalMm}" KeyboardNavigation.TabIndex="5" AutomationProperties.Name="目标垂直距离"/><TextBlock Text="实测高"/><TextBox Text="{Binding MeasuredVerticalMm}" KeyboardNavigation.TabIndex="6" AutomationProperties.Name="实测垂直距离"/>
+      <TextBlock Text="X 偏移"/><TextBox Text="{Binding OffsetXmm}" KeyboardNavigation.TabIndex="7" AutomationProperties.Name="X 偏移"/><TextBlock Text="Y 偏移"/><TextBox Text="{Binding OffsetYmm}" KeyboardNavigation.TabIndex="8" AutomationProperties.Name="Y 偏移"/>
+      <TextBlock Text="实测旋转"/><TextBox Text="{Binding MeasuredRotationDegrees}" KeyboardNavigation.TabIndex="9" AutomationProperties.Name="实测旋转角度"/>
+    </UniformGrid>
+    <Button Content="4. 计算修正预览" Command="{Binding CalculateCommand}" Margin="0,12,0,4" KeyboardNavigation.TabIndex="10"/>
+    <Button Content="5. 保存到本机打印机/介质档案" Command="{Binding SaveCommand}" Margin="0,4" KeyboardNavigation.TabIndex="11"/>
+    <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,10"/>
+  </StackPanel></ScrollViewer>
+</Window>

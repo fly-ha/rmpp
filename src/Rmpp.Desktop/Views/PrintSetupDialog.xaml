@@ -1,0 +1,40 @@
+<Window x:Class="Rmpp.Desktop.Views.PrintSetupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Rmpp.Desktop.Views"
+        Title="打印设置与预览" Width="980" Height="700" WindowStartupLocation="CenterOwner"
+        KeyboardNavigation.TabNavigation="Cycle">
+  <Grid Margin="12">
+    <Grid.ColumnDefinitions><ColumnDefinition Width="330"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="0,0,12,0">
+        <TextBlock Text="打印机" />
+        <ComboBox x:Name="PrinterCombo" ItemsSource="{Binding Printers}" SelectedItem="{Binding SelectedPrinter}" DisplayMemberPath="Identity.DisplayName"
+                  KeyboardNavigation.TabIndex="0" AutomationProperties.Name="{DynamicResource PrinterSelection}" />
+        <TextBlock Text="介质" Margin="0,8,0,0"/>
+        <ComboBox x:Name="MediaCombo" ItemsSource="{Binding Media}" SelectedItem="{Binding SelectedMedia}" DisplayMemberPath="DisplayName"
+                  KeyboardNavigation.TabIndex="1" AutomationProperties.Name="{DynamicResource MediaSelection}" />
+        <TextBlock Text="分辨率" Margin="0,8,0,0"/>
+        <ComboBox x:Name="ResolutionCombo" ItemsSource="{Binding Resolutions}" SelectedItem="{Binding SelectedResolution}" DisplayMemberPath="Key"
+                  KeyboardNavigation.TabIndex="2" AutomationProperties.Name="{DynamicResource ResolutionSelection}" />
+        <TextBlock Text="记录范围" Margin="0,8,0,0"/>
+        <StackPanel Orientation="Horizontal"><TextBox Width="70" Text="{Binding FirstRecord}" KeyboardNavigation.TabIndex="3" AutomationProperties.Name="首条记录"/><TextBlock Text=" 至 " VerticalAlignment="Center"/><TextBox Width="70" Text="{Binding LastRecord}" KeyboardNavigation.TabIndex="4" AutomationProperties.Name="末条记录"/></StackPanel>
+        <TextBlock Text="每记录副本 / 整体副本" Margin="0,8,0,0"/>
+        <StackPanel Orientation="Horizontal"><TextBox Width="70" Text="{Binding RecordCopies}" KeyboardNavigation.TabIndex="5" AutomationProperties.Name="每记录副本数"/><TextBox Width="70" Margin="8,0,0,0" Text="{Binding JobCopies}" KeyboardNavigation.TabIndex="6" AutomationProperties.Name="整体副本数"/></StackPanel>
+        <TextBlock Text="起始标签格" Margin="0,8,0,0"/><TextBox Width="90" HorizontalAlignment="Left" Text="{Binding StartingCell}" KeyboardNavigation.TabIndex="7" AutomationProperties.Name="起始标签格"/>
+        <Button x:Name="BuildPlanButton" Content="生成不可变计划" Command="{Binding BuildPlanCommand}" Margin="0,12,0,0" KeyboardNavigation.TabIndex="8" AutomationProperties.Name="{DynamicResource BuildPrintPlan}"/>
+        <Button x:Name="PrintButton" Content="打印" Command="{Binding PrintCommand}" Margin="0,8,0,0" KeyboardNavigation.TabIndex="9" AutomationProperties.Name="{DynamicResource PrintJob}"/>
+        <Separator Margin="0,12"/>
+        <TextBlock Text="本地 PDF" FontWeight="Bold"/>
+        <TextBox x:Name="PdfPathInput" Text="{Binding PdfExport.OutputPath, UpdateSourceTrigger=PropertyChanged}" Margin="0,4" KeyboardNavigation.TabIndex="10" AutomationProperties.Name="{DynamicResource PdfOutputPath}"/>
+        <Button Content="选择 PDF 路径…" Click="OnChoosePdf" Margin="0,4" KeyboardNavigation.TabIndex="11"/>
+        <StackPanel Orientation="Horizontal"><TextBox Width="70" Text="{Binding PdfExport.FirstPage}" KeyboardNavigation.TabIndex="12" AutomationProperties.Name="PDF 起始页"/><TextBlock Text=" 至 " VerticalAlignment="Center"/><TextBox Width="70" Text="{Binding PdfExport.LastPage}" KeyboardNavigation.TabIndex="13" AutomationProperties.Name="PDF 结束页"/></StackPanel>
+        <Button Content="导出 PDF" Command="{Binding PdfExport.ExportCommand}" Margin="0,6" KeyboardNavigation.TabIndex="14"/>
+        <TextBlock Text="{Binding PdfExport.StatusText}" TextWrapping="Wrap"/>
+        <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+        <ItemsControl ItemsSource="{Binding ValidationIssues}" Margin="0,8,0,0"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="IndianRed"/></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+    <views:PrintPreviewView Grid.Column="1" DataContext="{Binding Preview}" />
+  </Grid>
+</Window>

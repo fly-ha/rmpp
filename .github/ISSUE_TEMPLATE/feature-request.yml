@@ -1,0 +1,36 @@
+name: Feature request
+description: Propose a focused capability or usability improvement
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Offline use case
+      description: Describe the printing or template-design problem and why existing capabilities are insufficient.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Proposed scope
+      description: Note affected modules, template-format impact, printing impact, and privacy/offline constraints.
+    validations:
+      required: true
+  - type: input
+    id: change_id
+    attributes:
+      label: OpenSpec change id
+      description: Required before implementation for cross-module changes; use "not-created" for initial discussion.
+      placeholder: "add-example-capability"
+    validations:
+      required: true
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Product constraints
+      options:
+        - label: The feature can remain fully usable offline.
+          required: true
+        - label: The feature does not require accounts, telemetry, activation, or cloud services.
+          required: true

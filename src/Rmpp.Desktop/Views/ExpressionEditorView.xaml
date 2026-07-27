@@ -1,0 +1,17 @@
+<UserControl x:Class="Rmpp.Desktop.Views.ExpressionEditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="True"
+             KeyboardNavigation.TabNavigation="Contained">
+  <DockPanel Margin="8">
+    <Button DockPanel.Dock="Bottom" Content="验证表达式" Command="{Binding ValidateCommand}" Margin="0,8,0,0" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Diagnostic}" TextWrapping="Wrap" Margin="0,4,0,0" />
+    <TextBlock DockPanel.Dock="Bottom" Text="{Binding SampleResult}" TextWrapping="Wrap" Margin="0,4,0,0" />
+    <TextBox x:Name="Editor" AcceptsReturn="True" MinHeight="72" Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Drop="OnDropField"
+             KeyboardNavigation.TabIndex="0" AutomationProperties.Name="{DynamicResource ExpressionSource}" />
+    <ListBox x:Name="ExpressionFieldsList" ItemsSource="{Binding Fields}" SelectionChanged="OnFieldSelected" Margin="0,8,0,0" Height="100"
+             KeyboardNavigation.TabIndex="1" AutomationProperties.Name="{DynamicResource ExpressionFields}" />
+    <ListBox x:Name="ExpressionFunctionsList" ItemsSource="{Binding Functions}" SelectionChanged="OnFunctionSelected" Margin="0,8,0,0" Height="80"
+             KeyboardNavigation.TabIndex="2" AutomationProperties.Name="{DynamicResource ExpressionFunctions}" />
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,51 @@
+name: Bug report
+description: Report a reproducible offline RMPP defect
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Please remove imported row values, customer names, addresses, template assets, and other sensitive data before submitting."
+  - type: input
+    id: version
+    attributes:
+      label: RMPP version
+      placeholder: "0.9.0-preview.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: distribution
+    attributes:
+      label: Distribution
+      options:
+        - Installer
+        - Portable ZIP
+        - Source build
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Use a synthetic or redacted template/data source where possible.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed or replaced personal, customer, and proprietary data.
+          required: true

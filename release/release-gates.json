@@ -1,0 +1,7 @@
+{
+  "changeId": "build-offline-wysiwyg-print-designer",
+  "physicalPrinterMatrixVerified": false,
+  "cleanInstallMatrixVerified": false,
+  "manualDesignerMatrixVerified": false,
+  "evidenceDirectory": "docs/verification"
+}

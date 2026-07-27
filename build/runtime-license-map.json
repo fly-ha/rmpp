@@ -1,0 +1,23 @@
+[
+  { "id": "CommunityToolkit.Mvvm", "version": "8.4.0", "license": "MIT", "noticeToken": "CommunityToolkit.Mvvm" },
+  { "id": "Microsoft.Extensions.DependencyInjection", "version": "10.0.1", "license": "MIT", "noticeToken": "Microsoft.Extensions.DependencyInjection" },
+  { "id": "Microsoft.Extensions.DependencyInjection.Abstractions", "version": "10.0.1", "license": "MIT", "noticeToken": "Microsoft.Extensions.DependencyInjection.Abstractions" },
+  { "id": "Docnet.Core", "version": "2.6.0", "license": "MIT", "noticeToken": "Docnet.Core" },
+  { "id": "DocumentFormat.OpenXml", "version": "3.5.1", "license": "MIT", "noticeToken": "DocumentFormat.OpenXml" },
+  { "id": "DocumentFormat.OpenXml.Framework", "version": "3.5.1", "license": "MIT", "noticeToken": "DocumentFormat.OpenXml.Framework" },
+  { "id": "HarfBuzzSharp", "version": "14.2.1.1", "license": "MIT", "noticeToken": "HarfBuzzSharp" },
+  { "id": "HarfBuzzSharp.NativeAssets.macOS", "version": "14.2.1.1", "license": "MIT", "noticeToken": "HarfBuzzSharp.NativeAssets.macOS" },
+  { "id": "HarfBuzzSharp.NativeAssets.Win32", "version": "14.2.1.1", "license": "MIT", "noticeToken": "HarfBuzzSharp.NativeAssets.Win32" },
+  { "id": "Microsoft.Data.Sqlite", "version": "10.0.10", "license": "MIT", "noticeToken": "Microsoft.Data.Sqlite" },
+  { "id": "Microsoft.Data.Sqlite.Core", "version": "10.0.10", "license": "MIT", "noticeToken": "Microsoft.Data.Sqlite.Core" },
+  { "id": "SkiaSharp", "version": "4.150.1", "license": "MIT", "noticeToken": "SkiaSharp" },
+  { "id": "SkiaSharp.HarfBuzz", "version": "4.150.1", "license": "MIT", "noticeToken": "SkiaSharp.HarfBuzz" },
+  { "id": "SkiaSharp.NativeAssets.macOS", "version": "4.150.1", "license": "MIT", "noticeToken": "SkiaSharp.NativeAssets.macOS" },
+  { "id": "SkiaSharp.NativeAssets.Win32", "version": "4.150.1", "license": "MIT", "noticeToken": "SkiaSharp.NativeAssets.Win32" },
+  { "id": "SourceGear.sqlite3", "version": "3.53.3", "license": "Public-Domain", "noticeToken": "SourceGear.sqlite3" },
+  { "id": "SQLitePCLRaw.bundle_e_sqlite3", "version": "3.0.4", "license": "Apache-2.0", "noticeToken": "SQLitePCLRaw.bundle_e_sqlite3" },
+  { "id": "SQLitePCLRaw.config.e_sqlite3", "version": "3.0.4", "license": "Apache-2.0", "noticeToken": "SQLitePCLRaw.config.e_sqlite3" },
+  { "id": "SQLitePCLRaw.core", "version": "3.0.4", "license": "Apache-2.0", "noticeToken": "SQLitePCLRaw.core" },
+  { "id": "SQLitePCLRaw.provider.e_sqlite3", "version": "3.0.4", "license": "Apache-2.0", "noticeToken": "SQLitePCLRaw.provider.e_sqlite3" },
+  { "id": "ZXing.Net", "version": "0.16.11", "license": "Apache-2.0", "noticeToken": "ZXing.Net" }
+]

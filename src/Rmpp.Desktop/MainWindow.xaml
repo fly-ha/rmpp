@@ -1,0 +1,58 @@
+<Window x:Class="Rmpp.Desktop.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:Rmpp.Desktop.Views"
+        Title="{DynamicResource AppTitle}"
+        Width="1280" Height="820" MinWidth="960" MinHeight="640"
+        KeyboardNavigation.TabNavigation="Cycle"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="{DynamicResource FileMenu}">
+        <MenuItem Header="{DynamicResource NewTemplate}" Command="{Binding NewDocumentCommand}" InputGestureText="Ctrl+N" />
+        <MenuItem Header="{DynamicResource CloseTemplate}" Command="{Binding CloseActiveDocumentCommand}" />
+      </MenuItem>
+      <MenuItem Header="{DynamicResource EditMenu}">
+        <MenuItem Header="{DynamicResource Undo}" Command="{Binding ActiveDocument.UndoCommand}" InputGestureText="Ctrl+Z" />
+        <MenuItem Header="{DynamicResource Redo}" Command="{Binding ActiveDocument.RedoCommand}" InputGestureText="Ctrl+Y" />
+        <Separator />
+        <MenuItem Header="{DynamicResource Delete}" Command="{Binding ActiveDocument.DeleteCommand}" InputGestureText="Delete" />
+      </MenuItem>
+      <MenuItem Header="{DynamicResource DataMenu}">
+        <MenuItem Header="{DynamicResource ImportData}" Command="{Binding ImportDataCommand}" />
+      </MenuItem>
+      <MenuItem Header="{DynamicResource OutputMenu}">
+        <MenuItem Header="{DynamicResource PrintSetup}" Command="{Binding PrintSetupCommand}" />
+        <MenuItem Header="{DynamicResource Calibration}" Command="{Binding CalibrationCommand}" />
+      </MenuItem>
+      <MenuItem Header="{DynamicResource ToolsMenu}">
+        <MenuItem Header="{DynamicResource Recovery}" Command="{Binding RecoveryCommand}" />
+        <MenuItem Header="{DynamicResource Settings}" Command="{Binding SettingsCommand}" />
+      </MenuItem>
+      <MenuItem Header="{DynamicResource HelpMenu}" Command="{Binding HelpCommand}" />
+    </Menu>
+
+    <Border DockPanel.Dock="Bottom" BorderBrush="#D0D0D0" BorderThickness="0,1,0,0" Padding="8,4">
+      <TextBlock Text="{Binding ActiveDocument.Status.Text}" />
+    </Border>
+
+    <TabControl x:Name="DocumentsTabs"
+                ItemsSource="{Binding Documents}"
+                SelectedItem="{Binding ActiveDocument}"
+                AutomationProperties.Name="{DynamicResource OpenDocuments}">
+      <TabControl.ItemTemplate>
+        <DataTemplate>
+          <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{Binding DisplayTitle}" />
+            <TextBlock Text=" *" Visibility="{Binding IsDirty, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}" />
+          </StackPanel>
+        </DataTemplate>
+      </TabControl.ItemTemplate>
+      <TabControl.ContentTemplate>
+        <DataTemplate>
+          <views:DesignerView />
+        </DataTemplate>
+      </TabControl.ContentTemplate>
+    </TabControl>
+  </DockPanel>
+</Window>

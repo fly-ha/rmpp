@@ -2,7 +2,9 @@ using Rmpp.Desktop.Composition;
 using Rmpp.Desktop.Services;
 using Rmpp.Domain.Documents;
 using Rmpp.Infrastructure.Persistence;
+using Rmpp.Infrastructure.Persistence.Models;
 using Rmpp.Infrastructure.Templates;
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -58,8 +60,7 @@ public sealed class Phase12LocalServicesTests
             await coordinator.DiscardAsync(session);
             Assert.False(File.Exists(session.RecoveryPackagePath));
             coordinator.QueueAutosave(content, null, TimeSpan.FromMilliseconds(10));
-            await Task.Delay(150);
-            Assert.Single(await coordinator.GetAvailableAsync());
+            Assert.Single(await WaitForAvailableSessionsAsync(coordinator));
             coordinator.Dispose();
         }
         finally
@@ -67,5 +68,24 @@ public sealed class Phase12LocalServicesTests
             SqliteConnection.ClearAllPools();
             Directory.Delete(root, true);
         }
+    }
+
+    /// <summary>等待后台自动保存真正写入数据库，避免用固定延时假设 CI 文件系统和 SQLite 的速度。</summary>
+    private static async Task<IReadOnlyList<RecoverySession>> WaitForAvailableSessionsAsync(
+        RecoveryCoordinator coordinator)
+    {
+        Stopwatch timeout = Stopwatch.StartNew();
+        while (timeout.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            IReadOnlyList<RecoverySession> sessions = await coordinator.GetAvailableAsync();
+            if (sessions.Count > 0)
+            {
+                return sessions;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(25));
+        }
+
+        return await coordinator.GetAvailableAsync();
     }
 }

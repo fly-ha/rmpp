@@ -1,0 +1,52 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Rmpp.sln
+      - run: dotnet build Rmpp.sln -c Release --no-restore
+      - run: dotnet test Rmpp.sln -c Release --no-build --logger trx
+      - shell: pwsh
+        run: ./build/Verify-Licenses.ps1
+
+  distribution-smoke:
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-2022
+          - windows-2025
+    runs-on: ${{ matrix.os }}
+    env:
+      RMPP_CI_VERSION: 0.9.0-ci.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Build installer and portable distribution
+        shell: pwsh
+        run: ./build/Build-Distribution.ps1 -Version $env:RMPP_CI_VERSION
+      - name: Verify clean install, upgrade, uninstall, portable move, and offline runtime
+        shell: pwsh
+        run: ./build/Verify-Distribution.ps1 -Version $env:RMPP_CI_VERSION -VerifyInstaller
+      - name: Upload clean-environment evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: distribution-smoke-${{ matrix.os }}
+          if-no-files-found: error
+          path: |
+            artifacts/distribution/${{ env.RMPP_CI_VERSION }}/*.sha256
+            artifacts/distribution-verification/${{ env.RMPP_CI_VERSION }}/verification-summary.json
+            artifacts/distribution-verification/${{ env.RMPP_CI_VERSION }}/install.log

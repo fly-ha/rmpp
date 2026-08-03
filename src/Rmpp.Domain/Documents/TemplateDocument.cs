@@ -2,6 +2,7 @@ using Rmpp.Domain.Data;
 using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Layout;
+using Rmpp.Domain.Printing;
 
 namespace Rmpp.Domain.Documents;
 
@@ -17,6 +18,7 @@ public sealed record TemplateDocument
     public IReadOnlyList<AssetReference> Assets { get; init; } = Array.Empty<AssetReference>();
     public IReadOnlyList<FieldDefinition> Fields { get; init; } = Array.Empty<FieldDefinition>();
     public IReadOnlyList<SampleValue> SampleValues { get; init; } = Array.Empty<SampleValue>();
+    public TemplatePrintSettings PrintSettings { get; init; } = new();
 
     public static TemplateDocument CreateNew(string title = "Untitled")
     {

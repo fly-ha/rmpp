@@ -7,6 +7,8 @@ using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Styles;
 using Rmpp.Desktop.Resources;
+using Rmpp.Desktop.Utilities;
+using Rmpp.Rendering.Text;
 
 namespace Rmpp.Desktop.ViewModels;
 
@@ -18,11 +20,15 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     private readonly Array barcodeSymbologies = Enum.GetValues<BarcodeSymbology>();
     private readonly Array imageFitModes = Enum.GetValues<ImageFitMode>();
     private readonly Array hatchPatterns = Enum.GetValues<HatchPattern>();
+    private readonly IReadOnlyList<string> fontFamilies;
+    private static readonly Lazy<IReadOnlyList<string>> InstalledFontFamilies = new(
+        static () => new LocalFontCatalog().Families.ToArray());
 
     public PropertiesViewModel(DocumentSession session, EditorCommandDispatcher dispatcher)
     {
         this.session = session;
         this.dispatcher = dispatcher;
+        fontFamilies = InstalledFontFamilies.Value;
         session.Changed += OnSessionChanged;
     }
 
@@ -31,6 +37,7 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public Array BarcodeSymbologies => barcodeSymbologies;
     public Array ImageFitModes => imageFitModes;
     public Array HatchPatterns => hatchPatterns;
+    public IReadOnlyList<string> FontFamilies => fontFamilies;
 
     public string TypeName => SelectedElement?.GetType().Name ?? DesktopText.Get("NotSelected");
     public bool HasSelection => SelectedElement is not null;
@@ -38,6 +45,7 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public bool IsDateTimeElement => SelectedElement is DateTimeElement;
     public bool IsSerialElement => SelectedElement is SerialElement;
     public bool IsBarcodeElement => SelectedElement is BarcodeElement;
+    public bool IsQrCode => SelectedElement is BarcodeElement { Symbology: BarcodeSymbology.QrCode };
     public bool IsImageElement => SelectedElement is ImageElement;
     public bool SupportsPointEditing => SelectedElement is LineElement or PolylineElement or PolygonElement;
     public bool SupportsArcEditing => SelectedElement is ArcElement or SectorElement;
@@ -51,7 +59,7 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public double? Width { get => SelectedElement?.Bounds.Width; set => SetBounds(value, static (bounds, v) => new MmRect(bounds.X, bounds.Y, v, bounds.Height), positive: true); }
     public double? Height { get => SelectedElement?.Bounds.Height; set => SetBounds(value, static (bounds, v) => new MmRect(bounds.X, bounds.Y, bounds.Width, v), positive: true); }
     public double? Rotation { get => SelectedElement?.Rotation.Degrees; set => Change(element => element with { Rotation = new Angle(value ?? 0) }, "SetRotation"); }
-    public double? Opacity { get => SelectedElement?.Opacity; set => Change(element => element with { Opacity = Math.Clamp(value ?? 1, 0, 1) }, "SetOpacity"); }
+    public double? Opacity { get => SelectedElement?.Opacity; set => Change(element => element with { Opacity = Math.Clamp(value ?? 1, 0.01, 1) }, "SetOpacity"); }
     public bool? IsVisible { get => SelectedElement?.IsVisible; set => Change(element => element with { IsVisible = value ?? true }, "SetVisibility"); }
     public bool? IsPrintable { get => SelectedElement?.IsPrintable; set => Change(element => element with { IsPrintable = value ?? true }, "SetPrintable"); }
     public bool? IsLocked { get => SelectedElement?.IsLocked; set => ChangeState(value); }
@@ -122,7 +130,35 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public BarcodeSymbology? Symbology
     {
         get => (SelectedElement as BarcodeElement)?.Symbology;
-        set => Change(element => element is BarcodeElement barcode && value is not null ? barcode with { Symbology = value.Value } : element, "SetBarcode");
+        set
+        {
+            if (SelectedElement is BarcodeElement barcode && value is not null)
+            {
+                _ = dispatcher.Execute(new SetBarcodeSymbologyCommand(barcode.Id, value.Value));
+            }
+        }
+    }
+
+    public string? BarcodeCenterIconFileName => SelectedElement is BarcodeElement { CenterIconAssetId: { } assetId }
+        ? session.State.Document.Assets.FirstOrDefault(asset => asset.Id == assetId)?.FileName
+        : null;
+    public string BarcodeCenterIconDisplayName => BarcodeCenterIconFileName ?? DesktopText.Get("QrCenterIconNotSelected");
+    public bool HasBarcodeCenterIcon => SelectedElement is BarcodeElement { CenterIconAssetId: not null };
+    public double? BarcodeCenterIconScale
+    {
+        get => (SelectedElement as BarcodeElement)?.CenterIconScale;
+        set
+        {
+            if (value is { } scale
+                && double.IsFinite(scale)
+                && scale >= BarcodeElement.MinimumCenterIconScale
+                && scale <= BarcodeElement.MaximumCenterIconScale)
+            {
+                Change(element => element is BarcodeElement barcode
+                    ? barcode with { CenterIconScale = scale }
+                    : element, "SetBarcode");
+            }
+        }
     }
 
     public ImageFitMode? ImageFit
@@ -155,8 +191,13 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public HatchPattern? HatchPattern
     {
         get => (GetFill(SelectedElement) as HatchFill)?.Pattern;
-        set => Change(element => SetFill(element, value is null ? GetFill(element) : new HatchFill { Pattern = value.Value }), "SetHatch");
+        set => Change(element => SetFill(element, value is null
+            ? GetFill(element)
+            : (GetFill(element) as HatchFill ?? new HatchFill()) with { Pattern = value.Value }), "SetHatch");
     }
+
+    public bool HasSolidFill => GetFill(SelectedElement) is SolidFill;
+    public bool HasHatchFill => GetFill(SelectedElement) is HatchFill;
 
     public string? Points
     {
@@ -189,6 +230,78 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     {
         get => GetTextStyle(SelectedElement)?.FontSizePoints;
         set => Change(element => SetTextStyle(element, (GetTextStyle(element) ?? new TextStyle()) with { FontSizePoints = Math.Max(0.1, value ?? 10) }), "SetContent");
+    }
+
+    public bool? FontBold
+    {
+        get => GetTextStyle(SelectedElement)?.IsBold;
+        set => Change(element => SetTextStyle(element, (GetTextStyle(element) ?? new TextStyle()) with { IsBold = value ?? false }), "SetContent");
+    }
+
+    public bool? FontItalic
+    {
+        get => GetTextStyle(SelectedElement)?.IsItalic;
+        set => Change(element => SetTextStyle(element, (GetTextStyle(element) ?? new TextStyle()) with { IsItalic = value ?? false }), "SetContent");
+    }
+
+    public string TextColor
+    {
+        get => RgbaColorText.Format(GetTextStyle(SelectedElement)?.Color ?? RgbaColor.Black);
+        set
+        {
+            if (RgbaColorText.TryParse(value, out RgbaColor color))
+            {
+                Change(element => SetTextStyle(element, (GetTextStyle(element) ?? new TextStyle()) with { Color = color }), "SetContent");
+            }
+        }
+    }
+
+    public string StrokeColor
+    {
+        get => RgbaColorText.Format(GetStroke(SelectedElement)?.Color ?? RgbaColor.Black);
+        set
+        {
+            if (RgbaColorText.TryParse(value, out RgbaColor color))
+            {
+                Change(element => SetStroke(element, (GetStroke(element) ?? new StrokeStyle()) with { Color = color }), "SetStroke");
+            }
+        }
+    }
+
+    public string SolidFillColor
+    {
+        get => RgbaColorText.Format((GetFill(SelectedElement) as SolidFill)?.Color ?? new RgbaColor(230, 230, 230));
+        set
+        {
+            if (RgbaColorText.TryParse(value, out RgbaColor color))
+            {
+                Change(element => SetFill(element, new SolidFill(color)), "SetFill");
+            }
+        }
+    }
+
+    public string HatchForegroundColor
+    {
+        get => RgbaColorText.Format((GetFill(SelectedElement) as HatchFill)?.Foreground ?? RgbaColor.Black);
+        set
+        {
+            if (RgbaColorText.TryParse(value, out RgbaColor color))
+            {
+                Change(element => SetFill(element, (GetFill(element) as HatchFill ?? new HatchFill()) with { Foreground = color }), "SetHatch");
+            }
+        }
+    }
+
+    public string HatchBackgroundColor
+    {
+        get => RgbaColorText.Format((GetFill(SelectedElement) as HatchFill)?.Background ?? RgbaColor.Transparent);
+        set
+        {
+            if (RgbaColorText.TryParse(value, out RgbaColor color))
+            {
+                Change(element => SetFill(element, (GetFill(element) as HatchFill ?? new HatchFill()) with { Background = color }), "SetHatch");
+            }
+        }
     }
 
     public double? StartAngle
@@ -235,6 +348,33 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
             : element, "SetContent");
     }
 
+    public double? SerialStartValue
+    {
+        get => SerialStart;
+        set
+        {
+            if (value is { } number && double.IsFinite(number)) SerialStart = checked((long)number);
+        }
+    }
+
+    public double? SerialStepValue
+    {
+        get => SerialStep;
+        set
+        {
+            if (value is { } number && double.IsFinite(number) && number != 0) SerialStep = checked((long)number);
+        }
+    }
+
+    public double? SerialMinimumDigitsValue
+    {
+        get => SerialMinimumDigits;
+        set
+        {
+            if (value is { } number && double.IsFinite(number)) SerialMinimumDigits = checked((int)number);
+        }
+    }
+
     public string? ImageCrop
     {
         get => (SelectedElement as ImageElement)?.Crop is { } crop
@@ -248,6 +388,14 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
             }
         }
     }
+
+    public bool HasImageCrop => SelectedElement is ImageElement { Crop: not null };
+    public double? ImageCropX { get => (SelectedElement as ImageElement)?.Crop?.X; set => SetImageCrop(value, static (crop, number) => new MmRect(number, crop.Y, crop.Width, crop.Height)); }
+    public double? ImageCropY { get => (SelectedElement as ImageElement)?.Crop?.Y; set => SetImageCrop(value, static (crop, number) => new MmRect(crop.X, number, crop.Width, crop.Height)); }
+    public double? ImageCropWidth { get => (SelectedElement as ImageElement)?.Crop?.Width; set => SetImageCrop(value, static (crop, number) => new MmRect(crop.X, crop.Y, number, crop.Height), positive: true); }
+    public double? ImageCropHeight { get => (SelectedElement as ImageElement)?.Crop?.Height; set => SetImageCrop(value, static (crop, number) => new MmRect(crop.X, crop.Y, crop.Width, number), positive: true); }
+
+    public void ClearImageCrop() => Change(element => element is ImageElement image ? image with { Crop = null } : element, "SetImageFit");
 
     public string ValidationSummary => SelectedElement is null
         ? string.Empty
@@ -323,14 +471,18 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
         {
             nameof(SelectedElement), nameof(TypeName), nameof(Name), nameof(X), nameof(Y), nameof(Width), nameof(Height),
             nameof(HasSelection), nameof(IsTextElement), nameof(IsDateTimeElement), nameof(IsSerialElement),
-            nameof(IsBarcodeElement), nameof(IsImageElement), nameof(SupportsPointEditing), nameof(SupportsArcEditing),
+            nameof(IsBarcodeElement), nameof(IsQrCode), nameof(IsImageElement), nameof(SupportsPointEditing), nameof(SupportsArcEditing),
             nameof(SupportsCornerRadius), nameof(SupportsFont), nameof(SupportsStroke), nameof(SupportsFill),
             nameof(Rotation), nameof(Opacity), nameof(IsVisible), nameof(IsPrintable), nameof(IsLocked), nameof(Content),
-            nameof(Symbology), nameof(ImageFit), nameof(StrokeWidth), nameof(FillMode), nameof(HatchPattern), nameof(ValidationSummary),
+            nameof(Symbology), nameof(BarcodeCenterIconFileName), nameof(BarcodeCenterIconDisplayName), nameof(HasBarcodeCenterIcon), nameof(BarcodeCenterIconScale),
+            nameof(ImageFit), nameof(StrokeWidth), nameof(StrokeColor), nameof(FillMode), nameof(HatchPattern),
+            nameof(HasSolidFill), nameof(HasHatchFill), nameof(SolidFillColor), nameof(HatchForegroundColor), nameof(HatchBackgroundColor), nameof(ValidationSummary),
             nameof(Points),
-            nameof(FontFamily), nameof(FontSize), nameof(StartAngle), nameof(SweepDegrees), nameof(CornerRadius),
-            nameof(SerialStart), nameof(SerialStep), nameof(SerialPrefix), nameof(SerialSuffix), nameof(SerialMinimumDigits),
-            nameof(DateTimeFormat), nameof(ImageCrop), nameof(ImageFileName), nameof(ImageDisplayName), nameof(HasImageAsset),
+            nameof(FontFamily), nameof(FontSize), nameof(FontBold), nameof(FontItalic), nameof(TextColor), nameof(StartAngle), nameof(SweepDegrees), nameof(CornerRadius),
+            nameof(SerialStart), nameof(SerialStep), nameof(SerialStartValue), nameof(SerialStepValue), nameof(SerialMinimumDigitsValue),
+            nameof(SerialPrefix), nameof(SerialSuffix), nameof(SerialMinimumDigits),
+            nameof(DateTimeFormat), nameof(ImageCrop), nameof(HasImageCrop), nameof(ImageCropX), nameof(ImageCropY), nameof(ImageCropWidth), nameof(ImageCropHeight),
+            nameof(ImageFileName), nameof(ImageDisplayName), nameof(HasImageAsset),
         })
         {
             OnPropertyChanged(property);
@@ -397,5 +549,21 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
 
         rectangle = null;
         return false;
+    }
+
+    private void SetImageCrop(double? value, Func<MmRect, double, MmRect> transform, bool positive = false)
+    {
+        if (SelectedElement is not ImageElement image
+            || value is null
+            || !double.IsFinite(value.Value)
+            || positive && value.Value <= 0)
+        {
+            return;
+        }
+
+        MmRect current = image.Crop ?? new MmRect(0, 0, image.Bounds.Width, image.Bounds.Height);
+        Change(element => element is ImageElement currentImage
+            ? currentImage with { Crop = transform(current, value.Value) }
+            : element, "SetImageFit");
     }
 }

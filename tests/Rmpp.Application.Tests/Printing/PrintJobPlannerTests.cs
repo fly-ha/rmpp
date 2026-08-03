@@ -6,6 +6,7 @@ using Rmpp.Domain.Documents;
 using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Layout;
+using Rmpp.Domain.Printing;
 using Xunit;
 
 namespace Rmpp.Application.Tests.Printing;
@@ -34,21 +35,67 @@ public sealed class PrintJobPlannerTests
             Document = document,
             DataSet = data,
             RecordSelection = new PrintRecordSelection { StartIndex = 1, EndIndexInclusive = 2 },
-            CopyPolicy = new PrintCopyPolicy { RecordCopies = 2, JobCopies = 2 },
+            CopyPolicy = new PrintCopyPolicy { Copies = 2, Order = PrintCopyOrder.PerRecord },
             ReferenceTime = reference,
         });
 
-        Assert.Equal(8, plan.Pages.Count);
-        Assert.Equal(8, plan.TotalPlacements);
+        Assert.Equal(4, plan.Pages.Count);
+        Assert.Equal(4, plan.TotalPlacements);
         Assert.Equal(reference, plan.Context.JobTime.ReferenceTime);
         PlannedPlacement first = plan.Pages[0].Placements[0];
         PlannedPlacement secondCopy = plan.Pages[1].Placements[0];
-        PlannedPlacement repeatedJob = plan.Pages[4].Placements[0];
         Assert.Equal(1, first.RecordIndex);
         Assert.Equal("10", first.ResolvedElements.Single(item => item.ElementId == serial.Id).Text);
         Assert.Equal("11", secondCopy.ResolvedElements.Single(item => item.ElementId == serial.Id).Text);
-        Assert.Equal("10", repeatedJob.ResolvedElements.Single(item => item.ElementId == serial.Id).Text);
         Assert.Equal("R1", first.ResolvedElements.Single(item => item.ElementId == text.Id).Text);
+    }
+
+    [Fact]
+    public void CopyOrderProducesPerRecordOrCollatedPages()
+    {
+        (TemplateDocument document, _) = TestDocumentFactory.Create();
+        DataSetSnapshot data = DataSet(3);
+
+        PrintJobPlan perRecord = new PrintJobPlanner().Plan(new PrintJobRequest
+        {
+            Document = document,
+            DataSet = data,
+            CopyPolicy = new PrintCopyPolicy { Copies = 2, Order = PrintCopyOrder.PerRecord },
+        });
+        PrintJobPlan collated = new PrintJobPlanner().Plan(new PrintJobRequest
+        {
+            Document = document,
+            DataSet = data,
+            CopyPolicy = new PrintCopyPolicy { Copies = 2, Order = PrintCopyOrder.Collated },
+        });
+
+        Assert.Equal([0, 0, 1, 1, 2, 2], RecordOrder(perRecord));
+        Assert.Equal([0, 1, 2, 0, 1, 2], RecordOrder(collated));
+    }
+
+    [Fact]
+    public void OutputCountWithoutDataSourceFreezesOneHundredSerialValues()
+    {
+        SerialElement serial = new()
+        {
+            Bounds = new MmRect(0, 0, 30, 10),
+            Definition = new SerialDefinition { Start = 100, Step = 2 },
+        };
+        (TemplateDocument document, _) = TestDocumentFactory.Create(serial);
+
+        PrintJobPlan plan = new PrintJobPlanner().Plan(new PrintJobRequest
+        {
+            Document = document,
+            OutputCount = 100,
+        });
+
+        string[] values = plan.Pages
+            .Select(page => page.Placements[0].ResolvedElements.Single(item => item.ElementId == serial.Id).Text!)
+            .ToArray();
+        Assert.Equal(100, values.Length);
+        Assert.Equal("100", values[0]);
+        Assert.Equal("102", values[1]);
+        Assert.Equal("298", values[^1]);
     }
 
     [Fact]
@@ -163,6 +210,11 @@ public sealed class PrintJobPlannerTests
             Values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase) { ["Id"] = $"R{index}" },
         }).ToArray(),
     };
+
+    private static int[] RecordOrder(PrintJobPlan plan) => plan.Pages
+        .SelectMany(static page => page.Placements)
+        .Select(static placement => placement.RecordIndex)
+        .ToArray();
 
     private sealed class FakeClock : IClock
     {

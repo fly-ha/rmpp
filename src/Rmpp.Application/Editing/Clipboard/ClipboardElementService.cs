@@ -29,6 +29,10 @@ public sealed class ClipboardElementService(IClipboardAdapter clipboardAdapter)
             .OfType<ImageElement>()
             .Where(static image => image.AssetId.HasValue)
             .Select(static image => image.AssetId!.Value)
+            .Concat(elements
+                .OfType<BarcodeElement>()
+                .Where(static barcode => barcode.CenterIconAssetId.HasValue)
+                .Select(static barcode => barcode.CenterIconAssetId!.Value))
             .ToHashSet();
         Dictionary<Guid, AssetReference> references = state.Document.Assets.ToDictionary(static asset => asset.Id);
         ClipboardAsset[] assets = assetIds.Select(assetId =>
@@ -140,6 +144,17 @@ public sealed class ClipboardElementService(IClipboardAdapter clipboardAdapter)
                     AssetId = image.AssetId is Guid sourceAssetId && assetIdMap.TryGetValue(sourceAssetId, out Guid mapped)
                         ? mapped
                         : image.AssetId,
+                },
+                BarcodeElement barcode => barcode with
+                {
+                    Id = newId,
+                    LayerId = layerId,
+                    ZIndex = zIndex + index,
+                    Bounds = bounds,
+                    CenterIconAssetId = barcode.CenterIconAssetId is Guid sourceAssetId
+                        && assetIdMap.TryGetValue(sourceAssetId, out Guid mapped)
+                            ? mapped
+                            : barcode.CenterIconAssetId,
                 },
                 _ => element with { Id = newId, LayerId = layerId, ZIndex = zIndex + index, Bounds = bounds },
             };

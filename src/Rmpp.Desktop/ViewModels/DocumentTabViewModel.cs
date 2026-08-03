@@ -27,7 +27,7 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         Properties = new PropertiesViewModel(Session, Dispatcher);
         Layers = new LayersViewModel(Session, Dispatcher);
         Status = new StatusBarViewModel();
-        DataPreview = new DataPreviewViewModel();
+        DataPreview = new DataPreviewViewModel(Session);
         ExpressionEditor = new ExpressionEditorViewModel();
         UndoCommand = new RelayCommand(Undo, () => Dispatcher.History.CanUndo);
         RedoCommand = new RelayCommand(Redo, () => Dispatcher.History.CanRedo);
@@ -85,6 +85,7 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         Designer.Dispose();
         Properties.Dispose();
         Layers.Dispose();
+        DataPreview.Dispose();
     }
 
     private void Undo()

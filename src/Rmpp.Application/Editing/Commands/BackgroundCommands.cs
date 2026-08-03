@@ -84,8 +84,7 @@ public sealed class DeleteBackgroundAssetCommand(Guid backgroundId) : IEditorCom
         BackgroundDefinition[] backgrounds = document.Backgrounds
             .Where(item => item.Id != backgroundId)
             .ToArray();
-        bool remainsReferenced = backgrounds.Any(item => item.AssetId == target.AssetId)
-            || document.Elements.OfType<ImageElement>().Any(item => item.AssetId == target.AssetId);
+        bool remainsReferenced = AssetReferenceUsage.IsReferenced(document, target.AssetId, backgrounds: backgrounds);
         AssetReference[] assets = remainsReferenced
             ? document.Assets.ToArray()
             : document.Assets.Where(item => item.Id != target.AssetId).ToArray();

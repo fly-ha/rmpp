@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
@@ -39,17 +40,26 @@ public sealed class ElementCreateRequestedEventArgs(DesignerTool tool, MmRect bo
     public MmRect Bounds { get; } = bounds;
 }
 
+public sealed class GuideMovedEventArgs(Guid guideId, double positionMm) : RoutedEventArgs
+{
+    public Guid GuideId { get; } = guideId;
+    public double PositionMm { get; } = positionMm;
+}
+
 /// <summary>绘制完整物理页面、网格、参考线、元素和选择框，并把指针拖动换算回毫米。</summary>
 public sealed class DesignerSurface : FrameworkElement
 {
     public const string DesignerToolDataFormat = "RMPP.DesignerTool";
     private const double DipPerMm = 96d / 25.4;
     private const double MarginDip = 32;
+    private const double GuideHitToleranceDip = 6;
     private static readonly PdfBackgroundRasterizer PdfRasterizer = new();
     private Point? dragStart;
     private MmRect? resizeStartBounds;
     private Point? creationStart;
     private Point? creationCurrent;
+    private GuideDefinition? draggedGuide;
+    private double? draggedGuidePositionMm;
     private Dictionary<BackgroundImageKey, ImageSource> backgroundImages = [];
     private int backgroundRefreshVersion;
     private readonly RenderSceneBuilder renderSceneBuilder = new();
@@ -102,10 +112,11 @@ public sealed class DesignerSurface : FrameworkElement
     public event EventHandler<ElementsMovedEventArgs>? ElementsMoved;
     public event EventHandler<ElementResizedEventArgs>? ElementResized;
     public event EventHandler<ElementCreateRequestedEventArgs>? ElementCreateRequested;
+    public event EventHandler<GuideMovedEventArgs>? GuideMoved;
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        MmSize size = Document?.Page.Media.Size ?? new MmSize(210, 297);
+        MmSize size = GetOrientedPageSize(Document);
         return new Size(size.Width * DipPerMm * Zoom + MarginDip * 2, size.Height * DipPerMm * Zoom + MarginDip * 2);
     }
 
@@ -120,7 +131,7 @@ public sealed class DesignerSurface : FrameworkElement
         double scale = DipPerMm * Zoom;
         drawingContext.PushTransform(new TranslateTransform(MarginDip, MarginDip));
         drawingContext.PushTransform(new ScaleTransform(scale, scale));
-        MmSize pageSize = Document.Page.Media.Size;
+        MmSize pageSize = GetOrientedPageSize(Document);
         Brush pageBrush = SystemColors.WindowBrush;
         Brush borderBrush = SystemColors.WindowTextBrush;
         drawingContext.DrawRectangle(pageBrush, new Pen(borderBrush, 1 / scale), new Rect(0, 0, pageSize.Width, pageSize.Height));
@@ -158,14 +169,24 @@ public sealed class DesignerSurface : FrameworkElement
         }
         foreach (GuideDefinition guide in Document.Guides)
         {
-            Pen guidePen = new(SystemParameters.HighContrast ? SystemColors.HighlightBrush : Brushes.DeepSkyBlue, 1 / scale);
+            bool isDragging = draggedGuide?.Id == guide.Id;
+            double position = isDragging ? draggedGuidePositionMm ?? guide.PositionMm : guide.PositionMm;
+            Brush guideBrush = isDragging
+                ? Brushes.OrangeRed
+                : SystemParameters.HighContrast ? SystemColors.HighlightBrush : Brushes.DeepSkyBlue;
+            Pen guidePen = new(guideBrush, (isDragging ? 2 : 1) / scale);
             if (guide.Orientation == GuideOrientation.Vertical)
             {
-                drawingContext.DrawLine(guidePen, new Point(guide.PositionMm, 0), new Point(guide.PositionMm, pageSize.Height));
+                drawingContext.DrawLine(guidePen, new Point(position, 0), new Point(position, pageSize.Height));
             }
             else
             {
-                drawingContext.DrawLine(guidePen, new Point(0, guide.PositionMm), new Point(pageSize.Width, guide.PositionMm));
+                drawingContext.DrawLine(guidePen, new Point(0, position), new Point(pageSize.Width, position));
+            }
+
+            if (isDragging)
+            {
+                DrawGuidePositionLabel(drawingContext, guide.Orientation, position, pageSize, scale);
             }
         }
 
@@ -201,8 +222,18 @@ public sealed class DesignerSurface : FrameworkElement
             return;
         }
 
-        dragStart = e.GetPosition(this);
-        MmPoint point = ToMillimetres(dragStart.Value);
+        Point pointer = e.GetPosition(this);
+        MmPoint point = ToMillimetres(pointer);
+        if (HitTestGuide(point) is { } guide)
+        {
+            draggedGuide = guide;
+            draggedGuidePositionMm = ClampGuidePosition(guide, point);
+            InvalidateVisual();
+            e.Handled = true;
+            return;
+        }
+
+        dragStart = pointer;
         Guid? hit = Document is null ? null : ElementHitTester.HitTest(Document, point, 4 / Math.Max(Zoom, 0.1))?.Id;
         TemplateElement? selected = Document?.Elements.FirstOrDefault(element => SelectedElementIds?.Contains(element.Id) == true);
         if (selected is not null && IsNearBottomRight(point, selected.Bounds, 5 / (DipPerMm * Math.Max(Zoom, 0.1))))
@@ -216,6 +247,14 @@ public sealed class DesignerSurface : FrameworkElement
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);
+        if (draggedGuide is { } guide && e.LeftButton == MouseButtonState.Pressed)
+        {
+            draggedGuidePositionMm = ClampGuidePosition(guide, ToMillimetres(e.GetPosition(this)));
+            InvalidateVisual();
+            e.Handled = true;
+            return;
+        }
+
         if (creationStart is not null && e.LeftButton == MouseButtonState.Pressed)
         {
             creationCurrent = e.GetPosition(this);
@@ -227,6 +266,21 @@ public sealed class DesignerSurface : FrameworkElement
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
     {
         base.OnMouseLeftButtonUp(e);
+        if (draggedGuide is { } guide)
+        {
+            double position = draggedGuidePositionMm ?? guide.PositionMm;
+            draggedGuide = null;
+            draggedGuidePositionMm = null;
+            ReleaseMouseCapture();
+            InvalidateVisual();
+            if (Math.Abs(position - guide.PositionMm) > 0.001)
+            {
+                GuideMoved?.Invoke(this, new GuideMovedEventArgs(guide.Id, position));
+            }
+            e.Handled = true;
+            return;
+        }
+
         if (creationStart is { } createStart)
         {
             MmRect bounds = CreateBounds(createStart, e.GetPosition(this), ActiveTool, useDefaultWhenClick: true);
@@ -307,7 +361,7 @@ public sealed class DesignerSurface : FrameworkElement
             y = start.Y;
         }
 
-        MmSize page = Document?.Page.Media.Size ?? new MmSize(210, 297);
+        MmSize page = GetOrientedPageSize(Document);
         width = Math.Clamp(width, 0.1, page.Width);
         height = Math.Clamp(height, 0.1, page.Height);
         x = Math.Clamp(x, 0, Math.Max(0, page.Width - width));
@@ -349,6 +403,81 @@ public sealed class DesignerSurface : FrameworkElement
 
     private static bool IsNearBottomRight(MmPoint point, MmRect bounds, double tolerance) =>
         Math.Abs(point.X - bounds.Right) <= tolerance && Math.Abs(point.Y - bounds.Bottom) <= tolerance;
+
+    /// <summary>方向只影响页面的可见宽高，文档仍保留介质原始尺寸，避免打印与设计端各自解释。</summary>
+    private static MmSize GetOrientedPageSize(TemplateDocument? document)
+    {
+        if (document is null)
+        {
+            return new MmSize(210, 297);
+        }
+
+        MmSize size = document.Page.Media.Size;
+        return document.Page.Media.Orientation == Rmpp.Domain.Layout.PageOrientation.Landscape
+            ? new MmSize(size.Height, size.Width)
+            : size;
+    }
+
+    private GuideDefinition? HitTestGuide(MmPoint point)
+    {
+        if (Document is null)
+        {
+            return null;
+        }
+
+        MmSize page = GetOrientedPageSize(Document);
+        double toleranceMm = GuideHitToleranceDip / (DipPerMm * Math.Max(Zoom, 0.1));
+        return Document.Guides
+            .Where(static guide => !guide.IsLocked)
+            .Select(guide => new
+            {
+                Guide = guide,
+                Distance = guide.Orientation == GuideOrientation.Vertical
+                    ? Math.Abs(point.X - guide.PositionMm)
+                    : Math.Abs(point.Y - guide.PositionMm),
+                IsInsidePage = guide.Orientation == GuideOrientation.Vertical
+                    ? point.Y >= -toleranceMm && point.Y <= page.Height + toleranceMm
+                    : point.X >= -toleranceMm && point.X <= page.Width + toleranceMm,
+            })
+            .Where(candidate => candidate.IsInsidePage && candidate.Distance <= toleranceMm)
+            .OrderBy(static candidate => candidate.Distance)
+            .Select(static candidate => candidate.Guide)
+            .FirstOrDefault();
+    }
+
+    private double ClampGuidePosition(GuideDefinition guide, MmPoint point)
+    {
+        MmSize page = GetOrientedPageSize(Document);
+        double requested = guide.Orientation == GuideOrientation.Vertical ? point.X : point.Y;
+        double maximum = guide.Orientation == GuideOrientation.Vertical ? page.Width : page.Height;
+        return Math.Clamp(requested, 0, maximum);
+    }
+
+    private void DrawGuidePositionLabel(
+        DrawingContext context,
+        GuideOrientation orientation,
+        double position,
+        MmSize page,
+        double scale)
+    {
+        double fontSize = 12 / scale;
+        double padding = 3 / scale;
+        FormattedText text = new(
+            $"{position:0.##} mm",
+            CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight,
+            new Typeface("Microsoft YaHei UI"),
+            fontSize,
+            Brushes.White,
+            VisualTreeHelper.GetDpi(this).PixelsPerDip);
+        double x = orientation == GuideOrientation.Vertical ? position + padding : padding;
+        double y = orientation == GuideOrientation.Horizontal ? position + padding : padding;
+        x = Math.Clamp(x, padding, Math.Max(padding, page.Width - text.Width - padding * 2));
+        y = Math.Clamp(y, padding, Math.Max(padding, page.Height - text.Height - padding * 2));
+        Rect background = new(x - padding, y - padding, text.Width + padding * 2, text.Height + padding * 2);
+        context.DrawRoundedRectangle(Brushes.OrangeRed, null, background, padding, padding);
+        context.DrawText(text, new Point(x, y));
+    }
 
     /// <summary>只绘制编辑器专属的图片占位与选择手柄，元素正文由统一 RenderScene 负责。</summary>
     private void DrawElementOverlay(DrawingContext context, TemplateElement element, double scale)

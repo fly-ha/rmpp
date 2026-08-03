@@ -122,6 +122,14 @@ public partial class DesignerView : UserControl
         }
     }
 
+    private void OnGuideMoved(object sender, GuideMovedEventArgs e)
+    {
+        if (DataContext is DocumentTabViewModel document)
+        {
+            document.Designer.MoveGuide(e.GuideId, e.PositionMm);
+        }
+    }
+
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
         if (DataContext is not DocumentTabViewModel document)
@@ -175,7 +183,8 @@ public partial class DesignerView : UserControl
     private void OnAlignTop(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(static designer => designer.Align(AlignmentMode.Top));
     private void OnDistributeHorizontal(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(static designer => designer.Distribute(DistributionAxis.Horizontal));
     private void OnDistributeVertical(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(static designer => designer.Distribute(DistributionAxis.Vertical));
-    private void OnAddHorizontalGuide(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(designer => designer.AddGuide(GuideOrientation.Horizontal, designer.Document.Page.Media.Size.Height / 2));
+    private void OnAddHorizontalGuide(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(designer => designer.AddGuide(GuideOrientation.Horizontal, designer.PageHeightMm / 2));
+    private void OnAddVerticalGuide(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(designer => designer.AddGuide(GuideOrientation.Vertical, designer.PageWidthMm / 2));
     private void OnClearGuides(object sender, System.Windows.RoutedEventArgs e) => WithDesigner(static designer => designer.ClearGuides());
 
     private void WithDesigner(Action<DesignerViewModel> action)

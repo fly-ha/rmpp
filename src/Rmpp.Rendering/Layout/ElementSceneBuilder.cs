@@ -183,9 +183,19 @@ public class ElementSceneBuilder(
             Symbology = barcode.Symbology,
             LocalBounds = localBounds,
             QuietZoneMm = barcode.QuietZoneMm,
-            ErrorCorrectionLevel = barcode.ErrorCorrectionLevel,
+            ErrorCorrectionLevel = barcode.CenterIconAssetId.HasValue
+                ? Math.Max(3, barcode.ErrorCorrectionLevel)
+                : barcode.ErrorCorrectionLevel,
             ShowHumanReadableText = barcode.ShowHumanReadableText,
             HumanReadableTextStyle = RenderTextStyle.FromDomain(barcode.HumanReadableTextStyle),
+            CenterIcon = barcode.CenterIconAssetId is { } centerIconAssetId
+                ? new RenderImage
+                {
+                    AssetId = centerIconAssetId,
+                    FitMode = ImageFitMode.Contain,
+                }
+                : null,
+            CenterIconScale = barcode.CenterIconScale,
         };
         return Success(command);
     }

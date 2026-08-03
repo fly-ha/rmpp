@@ -29,6 +29,7 @@ public sealed class WindowsPrintService(
             JobName = request.JobName,
             Ticket = ticket,
             Scenes = request.Scenes,
+            AssetProvider = request.AssetProvider,
             Calibration = calibration,
         };
         PrintSubmissionSession session = new(spoolAdapter);

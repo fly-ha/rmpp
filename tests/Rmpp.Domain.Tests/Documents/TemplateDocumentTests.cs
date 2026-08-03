@@ -14,5 +14,8 @@ public sealed class TemplateDocumentTests
         Assert.Equal(210, document.Page.Media.Size.Width);
         Assert.Equal(297, document.Page.Media.Size.Height);
         Assert.Single(document.Layers);
+        Assert.Equal(1, document.PrintSettings.OutputCount);
+        Assert.Equal(1, document.PrintSettings.Copies);
+        Assert.Null(document.PrintSettings.PreferredPrinterId);
     }
 }

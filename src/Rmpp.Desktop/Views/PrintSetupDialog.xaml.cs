@@ -8,6 +8,14 @@ public partial class PrintSetupDialog : Window
 {
     public PrintSetupDialog() { InitializeComponent(); }
 
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is PrintSetupViewModel viewModel && viewModel.RefreshPrintersCommand.CanExecute(null))
+        {
+            await viewModel.RefreshPrintersCommand.ExecuteAsync(null);
+        }
+    }
+
     private void OnChoosePdf(object sender, RoutedEventArgs e)
     {
         SaveFileDialog dialog = new() { Filter = "PDF 文件|*.pdf", AddExtension = true, DefaultExt = ".pdf" };

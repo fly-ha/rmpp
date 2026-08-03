@@ -81,4 +81,26 @@ public sealed class DocumentValidatorTests
         Assert.Equal(asset.Id, issue.Location.AssetId);
         Assert.True(issue.BlocksOutput);
     }
+
+    [Fact]
+    public void MissingQrCenterIconAssetPointsToBarcodeProperty()
+    {
+        Guid missingAssetId = Guid.NewGuid();
+        BarcodeElement barcode = new()
+        {
+            Symbology = BarcodeSymbology.QrCode,
+            CenterIconAssetId = missingAssetId,
+            Content = ElementExpression.Literal("RMPP QR ICON"),
+            Bounds = new MmRect(10, 10, 30, 30),
+        };
+        (TemplateDocument document, _) = TestDocumentFactory.Create(barcode);
+
+        ValidationIssue issue = Assert.Single(
+            new DocumentValidator().Validate(document),
+            item => item.Code == "missing-qr-center-icon-asset");
+
+        Assert.Equal(barcode.Id, issue.Location.ElementId);
+        Assert.Equal(missingAssetId, issue.Location.AssetId);
+        Assert.Equal(nameof(BarcodeElement.CenterIconAssetId), issue.Location.PropertyPath);
+    }
 }

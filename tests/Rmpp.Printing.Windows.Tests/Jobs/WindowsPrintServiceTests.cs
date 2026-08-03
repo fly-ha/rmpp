@@ -5,6 +5,8 @@ using Rmpp.Printing.Windows.Jobs;
 using Rmpp.Printing.Windows.Printers;
 using Rmpp.Printing.Windows.Tests.Printers;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Images;
+using Rmpp.Rendering.Skia;
 using Xunit;
 
 namespace Rmpp.Printing.Windows.Tests.Jobs;
@@ -21,6 +23,7 @@ public sealed class WindowsPrintServiceTests
         CapturingSpoolAdapter spool = new();
         CalibrationProfile calibration = new() { Key = new PrinterMediaKey(printerId, "a4") };
         WindowsPrintService service = new(catalog, spool, new FakeCalibrationProvider(calibration));
+        IRenderAssetProvider assetProvider = new EmptyAssetProvider();
         PrintSubmissionRequest request = new()
         {
             PrinterId = printerId,
@@ -28,6 +31,7 @@ public sealed class WindowsPrintServiceTests
             Scenes = Yield(scene),
             ResolutionDpi = 300,
             JobName = "一致性测试",
+            AssetProvider = assetProvider,
         };
 
         PrintSubmissionResult result = await service.SubmitAsync(request);
@@ -35,6 +39,7 @@ public sealed class WindowsPrintServiceTests
         Assert.Equal(1, result.SubmittedPages);
         Assert.NotNull(spool.Request);
         Assert.Same(calibration, spool.Request.Calibration);
+        Assert.Same(assetProvider, spool.Request.AssetProvider);
         Assert.Equal("一致性测试", spool.Request.JobName);
         Assert.Same(scene, Assert.Single(spool.ReceivedScenes));
     }
@@ -163,5 +168,10 @@ public sealed class WindowsPrintServiceTests
             CallCount++;
             return Task.FromResult(new PrintSubmissionResult(2, true, null));
         }
+    }
+
+    private sealed class EmptyAssetProvider : IRenderAssetProvider
+    {
+        public DecodedImage? Load(RenderImage image, double targetDpi) => null;
     }
 }

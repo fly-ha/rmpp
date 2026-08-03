@@ -7,7 +7,9 @@ using Rmpp.Rendering.Scene;
 using Rmpp.Rendering.Skia;
 using SkiaSharp;
 using System.IO;
+using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows.Media;
 using Xunit;
 
 namespace Rmpp.Desktop.Tests.Conformance;
@@ -73,12 +75,13 @@ public sealed class BackendConformanceTests
             try
             {
                 WpfRenderedPage rendered = new WpfPrintSceneRenderer().Render(page);
-                RenderTargetBitmap target = new(width, height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
-                target.Render(rendered.Visual);
-                int stride = width * 4;
-                byte[] pixels = new byte[stride * height];
-                target.CopyPixels(pixels, stride, 0);
-                result = BoundsFromBgra(pixels, width, height, stride);
+                Rect bounds = FindDarkBounds(rendered.Visual.Drawing)
+                    ?? throw new InvalidOperationException("Windows 打印矢量场景中没有找到深色图形。");
+                result = new PixelBounds(
+                    (int)Math.Floor(bounds.Left),
+                    (int)Math.Floor(bounds.Top),
+                    (int)Math.Ceiling(bounds.Right) - 1,
+                    (int)Math.Ceiling(bounds.Bottom) - 1);
             }
             catch (Exception exception) { failure = exception; }
         });
@@ -87,6 +90,49 @@ public sealed class BackendConformanceTests
         thread.Join();
         Assert.Null(failure);
         return result;
+    }
+
+    private static Rect? FindDarkBounds(Drawing drawing)
+    {
+        if (drawing is GeometryDrawing geometryDrawing
+            && geometryDrawing.Brush is SolidColorBrush brush
+            && brush.Color.R < 128
+            && brush.Color.G < 128
+            && brush.Color.B < 128)
+        {
+            return geometryDrawing.Geometry.Bounds;
+        }
+
+        if (drawing is not DrawingGroup group)
+        {
+            return null;
+        }
+
+        Rect? aggregate = null;
+        foreach (Drawing child in group.Children)
+        {
+            if (FindDarkBounds(child) is not { } childBounds)
+            {
+                continue;
+            }
+
+            aggregate = aggregate is null ? childBounds : Rect.Union(aggregate.Value, childBounds);
+        }
+
+        if (aggregate is not { } bounds)
+        {
+            return null;
+        }
+
+        if (group.Transform is { } transform && !transform.Value.IsIdentity)
+        {
+            bounds = transform.TransformBounds(bounds);
+        }
+        if (group.ClipGeometry is { } clip)
+        {
+            bounds.Intersect(clip.Bounds);
+        }
+        return bounds;
     }
 
     private static PixelBounds BoundsFromSkia(SKBitmap bitmap)

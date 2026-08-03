@@ -1,17 +1,27 @@
 <UserControl x:Class="Rmpp.Desktop.Views.ExpressionEditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             Focusable="True"
-             KeyboardNavigation.TabNavigation="Contained">
-  <DockPanel Margin="8">
-    <Button DockPanel.Dock="Bottom" Content="验证表达式" Command="{Binding ValidateCommand}" Margin="0,8,0,0" />
-    <TextBlock DockPanel.Dock="Bottom" Text="{Binding Diagnostic}" TextWrapping="Wrap" Margin="0,4,0,0" />
-    <TextBlock DockPanel.Dock="Bottom" Text="{Binding SampleResult}" TextWrapping="Wrap" Margin="0,4,0,0" />
-    <TextBox x:Name="Editor" AcceptsReturn="True" MinHeight="72" Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Drop="OnDropField"
-             KeyboardNavigation.TabIndex="0" AutomationProperties.Name="{DynamicResource ExpressionSource}" />
-    <ListBox x:Name="ExpressionFieldsList" ItemsSource="{Binding Fields}" SelectionChanged="OnFieldSelected" Margin="0,8,0,0" Height="100"
-             KeyboardNavigation.TabIndex="1" AutomationProperties.Name="{DynamicResource ExpressionFields}" />
-    <ListBox x:Name="ExpressionFunctionsList" ItemsSource="{Binding Functions}" SelectionChanged="OnFunctionSelected" Margin="0,8,0,0" Height="80"
-             KeyboardNavigation.TabIndex="2" AutomationProperties.Name="{DynamicResource ExpressionFunctions}" />
-  </DockPanel>
+             Focusable="True" KeyboardNavigation.TabNavigation="Contained">
+  <Grid Margin="8">
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="120"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <TextBlock Text="表达式以 = 开头；字段写作 [字段名]，可使用 concat、if、formatdate 等离线安全函数。" TextWrapping="Wrap" Foreground="DimGray"/>
+    <TextBox x:Name="Editor" Grid.Row="1" AcceptsReturn="True" Text="{Binding Source, UpdateSourceTrigger=PropertyChanged}" AllowDrop="True" Drop="OnDropField"
+             KeyboardNavigation.TabIndex="0" AutomationProperties.Name="表达式内容" Margin="0,6,0,0"/>
+    <StackPanel Grid.Row="2" Margin="0,6,0,6">
+      <TextBlock Text="{Binding SampleResult, StringFormat=结果：{0}}" TextWrapping="Wrap"/>
+      <TextBlock Text="{Binding Diagnostic}" TextWrapping="Wrap" Foreground="OrangeRed"/>
+    </StackPanel>
+    <Grid Grid.Row="3">
+      <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+      <GroupBox Header="字段（双击或 Enter 插入）" Margin="0,0,4,0">
+        <ListBox x:Name="ExpressionFieldsList" ItemsSource="{Binding Fields}" MouseDoubleClick="OnFieldActivated" KeyDown="OnFieldKeyDown"
+                 KeyboardNavigation.TabIndex="1" AutomationProperties.Name="表达式字段"/>
+      </GroupBox>
+      <GroupBox Grid.Column="1" Header="函数（双击或 Enter 插入）" Margin="4,0,0,0">
+        <ListBox x:Name="ExpressionFunctionsList" ItemsSource="{Binding Functions}" MouseDoubleClick="OnFunctionActivated" KeyDown="OnFunctionKeyDown"
+                 KeyboardNavigation.TabIndex="2" AutomationProperties.Name="表达式函数"/>
+      </GroupBox>
+    </Grid>
+    <Button Grid.Row="4" Content="验证表达式" Command="{Binding ValidateCommand}" Margin="0,8,0,0" Padding="10,4"/>
+  </Grid>
 </UserControl>

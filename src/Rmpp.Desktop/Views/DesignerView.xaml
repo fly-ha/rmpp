@@ -36,8 +36,29 @@
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
-        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+        <ScrollViewer Grid.Row="2" Margin="0,10,0,0" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
           <Separator Margin="0,0,0,8" />
+          <TextBlock Text="页面设置" FontWeight="Bold" />
+          <TextBlock Text="介质名称" Margin="0,6,0,0" />
+          <TextBox Text="{Binding Designer.PageMediaName, UpdateSourceTrigger=LostFocus}" />
+          <Grid Margin="0,4,0,0">
+            <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="8" /><ColumnDefinition /></Grid.ColumnDefinitions>
+            <StackPanel>
+              <TextBlock Text="宽度 (mm)" />
+              <controls:BufferedNumericTextBox Value="{Binding Designer.PageWidthMm}" Minimum="0.1" />
+            </StackPanel>
+            <StackPanel Grid.Column="2">
+              <TextBlock Text="高度 (mm)" />
+              <controls:BufferedNumericTextBox Value="{Binding Designer.PageHeightMm}" Minimum="0.1" />
+            </StackPanel>
+          </Grid>
+          <TextBlock Text="方向" Margin="0,4,0,0" />
+          <ComboBox ItemsSource="{Binding Designer.PageOrientations}"
+                    SelectedItem="{Binding Designer.PageOrientation}" />
+          <TextBlock Text="模板尺寸是设计、预览和 PDF 的物理尺寸；打印设置默认跟随此尺寸。"
+                     TextWrapping="Wrap" Foreground="DimGray" Margin="0,4,0,0" />
+          <Separator Margin="0,8" />
           <TextBlock Text="{DynamicResource Background}" FontWeight="Bold" />
           <Button Content="{DynamicResource ImportBackground}" Click="OnImportBackground" Margin="0,6,0,4" />
           <CheckBox Content="{DynamicResource BackgroundVisible}"
@@ -58,7 +79,7 @@
                   Value="{Binding Designer.ActiveBackgroundOpacity}"
                   IsEnabled="{Binding Designer.HasBackground}" />
           <TextBlock Text="{DynamicResource BackgroundPdfPage}" Margin="0,4,0,0" />
-          <TextBox Text="{Binding Designer.ActiveBackgroundPdfPageNumber, UpdateSourceTrigger=LostFocus}"
+          <controls:BufferedNumericTextBox Value="{Binding Designer.ActiveBackgroundPdfPageNumberValue}" IsInteger="True" Minimum="1"
                    IsEnabled="{Binding Designer.HasBackground}" />
           <Button Content="{DynamicResource DeleteBackground}" Click="OnDeleteBackground"
                   IsEnabled="{Binding Designer.HasBackground}" Margin="0,6,0,0" />
@@ -70,6 +91,7 @@
                   KeyboardNavigation.TabIndex="0"
                   AutomationProperties.Name="{DynamicResource DesignerZoom}" />
         </StackPanel>
+        </ScrollViewer>
       </Grid>
     </Border>
 
@@ -86,6 +108,7 @@
         <Button Content="{DynamicResource DistributeVertical}" Click="OnDistributeVertical" />
         <Separator />
         <Button Content="{DynamicResource AddHorizontalGuide}" Click="OnAddHorizontalGuide" />
+        <Button Content="添加垂直参考线" Click="OnAddVerticalGuide" />
         <Button Content="{DynamicResource ClearGuides}" Click="OnClearGuides" />
         <TextBlock Text="{Binding Designer.SnapIndicator}" Margin="12,0" VerticalAlignment="Center" />
       </ToolBar>
@@ -105,7 +128,8 @@
                                   ElementSelected="OnElementSelected"
                                   ElementCreateRequested="OnElementCreateRequested"
                                   ElementsMoved="OnElementsMoved"
-                                  ElementResized="OnElementResized" />
+                                  ElementResized="OnElementResized"
+                                  GuideMoved="OnGuideMoved" />
       </ScrollViewer>
     </Grid>
 

@@ -1,5 +1,6 @@
 using Rmpp.Domain.Elements;
 using Rmpp.Domain.Styles;
+using Rmpp.Domain.Printing;
 using Rmpp.Infrastructure.Templates;
 using Xunit;
 
@@ -23,9 +24,19 @@ public sealed class PackageRoundTripTests
         TemplatePackageContent result = await new RmppPackageReader().ReadAsync(stream);
 
         Assert.Equal(source.Document.Id, result.Document.Id);
-        Assert.Equal(3, result.Document.Elements.Count);
+        Assert.Equal("printer-stable-id", result.Document.PrintSettings.PreferredPrinterId);
+        Assert.Equal("办公室打印机", result.Document.PrintSettings.PreferredPrinterDisplayName);
+        Assert.Equal(100, result.Document.PrintSettings.OutputCount);
+        Assert.Equal(2, result.Document.PrintSettings.Copies);
+        Assert.Equal(PrintCopyOrder.Collated, result.Document.PrintSettings.CopyOrder);
+        Assert.Equal(3, result.Document.PrintSettings.StartingCell);
+        Assert.False(result.Document.PrintSettings.IncludePrintableBackgrounds);
+        Assert.Equal(4, result.Document.Elements.Count);
         PolygonElement polygon = Assert.IsType<PolygonElement>(result.Document.Elements[1]);
         Assert.IsType<HatchFill>(polygon.Fill);
+        BarcodeElement barcode = Assert.IsType<BarcodeElement>(result.Document.Elements[3]);
+        Assert.Equal(source.Document.Assets[0].Id, barcode.CenterIconAssetId);
+        Assert.Equal(0.18, barcode.CenterIconScale);
         Assert.Equal(source.Assets.Single().Value, result.Assets.Single().Value);
         Assert.Equal(source.PreviewPng, result.PreviewPng);
     }

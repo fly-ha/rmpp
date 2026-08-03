@@ -9,7 +9,7 @@ public sealed class LocalRenderExporter(SkiaPdfExporter? exporter = null) : IRen
 {
     private readonly SkiaPdfExporter exporter = exporter ?? new SkiaPdfExporter();
 
-    public Task ExportAsync(
+    public async Task ExportAsync(
         RenderScene scene,
         Stream destination,
         RenderExportOptions options,
@@ -47,7 +47,7 @@ public sealed class LocalRenderExporter(SkiaPdfExporter? exporter = null) : IRen
             destination,
             options.AssetProvider,
             new SkiaRenderOptions { ImageSourceDpi = options.ImageSourceDpi });
+        await destination.FlushAsync(cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.CompletedTask;
     }
 }

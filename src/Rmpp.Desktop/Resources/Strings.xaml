@@ -80,6 +80,17 @@
   <system:String x:Key="ContentExpressionFormat">内容 / 表达式 / 格式</system:String>
   <system:String x:Key="PointCoordinates">点坐标（x,y; x,y）</system:String>
   <system:String x:Key="BarcodeSymbology">条码制式</system:String>
+  <system:String x:Key="QrCenterIcon">二维码中心图标</system:String>
+  <system:String x:Key="SelectQrCenterIcon">选择图标</system:String>
+  <system:String x:Key="ClearQrCenterIcon">清除图标</system:String>
+  <system:String x:Key="QrCenterIconScale">图标大小（二维码短边比例，0.10–0.25）</system:String>
+  <system:String x:Key="QrCenterIconNotSelected">尚未选择中心图标</system:String>
+  <system:String x:Key="SelectQrCodeFirst">请先选择一个二维码元素。</system:String>
+  <system:String x:Key="QrIconQrOnly">中心图标只适用于二维码。</system:String>
+  <system:String x:Key="UnlockQrCodeFirst">请先解除二维码元素锁定。</system:String>
+  <system:String x:Key="QrCenterIconImportedFormat">二维码中心图标“{0}”已导入模板。</system:String>
+  <system:String x:Key="QrCenterIconImportFailedFormat">二维码中心图标导入失败：{0}</system:String>
+  <system:String x:Key="QrCenterIconCleared">二维码中心图标已清除。</system:String>
   <system:String x:Key="ImageFit">图片适配</system:String>
   <system:String x:Key="StrokeWidthMm">描边宽度 (mm)</system:String>
   <system:String x:Key="Fill">填充</system:String>

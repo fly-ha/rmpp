@@ -64,7 +64,9 @@ public sealed class WpfXpsSpoolAdapter(WpfPrintSceneRenderer? renderer = null) :
                 request.Calibration,
                 pageSize,
                 countingProgress,
-                cancellationToken);
+                cancellationToken,
+                request.AssetProvider,
+                Math.Max(request.Ticket.Resolution.DpiX, request.Ticket.Resolution.DpiY));
             XpsDocumentWriter writer = PrintQueue.CreateXpsDocumentWriter(queue);
             writer.Write(paginator, validation.ValidatedPrintTicket);
             completion.TrySetResult(new PrintSubmissionResult(submittedPages, false, null));

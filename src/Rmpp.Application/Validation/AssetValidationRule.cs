@@ -40,6 +40,25 @@ public sealed class AssetValidationRule : IDocumentValidationRule
             }
         }
 
+        foreach (BarcodeElement barcode in context.Document.Elements.OfType<BarcodeElement>())
+        {
+            if (barcode.CenterIconAssetId is Guid assetId && !references.ContainsKey(assetId))
+            {
+                yield return new ValidationIssue(
+                    "missing-qr-center-icon-asset",
+                    "QR code center icon references an asset that does not exist.",
+                    ValidationSeverity.Error,
+                    new ValidationLocation
+                    {
+                        DocumentId = context.Document.Id,
+                        PageNumber = 1,
+                        ElementId = barcode.Id,
+                        AssetId = assetId,
+                        PropertyPath = nameof(barcode.CenterIconAssetId),
+                    });
+            }
+        }
+
         foreach (BackgroundDefinition background in context.Document.Backgrounds.Where(background => !references.ContainsKey(background.AssetId)))
         {
             yield return new ValidationIssue(

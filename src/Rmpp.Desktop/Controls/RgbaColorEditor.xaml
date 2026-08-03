@@ -1,0 +1,59 @@
+<UserControl x:Class="Rmpp.Desktop.Controls.RgbaColorEditor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Focusable="False">
+  <UserControl.Resources>
+    <Style x:Key="PaletteButtonStyle" TargetType="Button">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Margin" Value="2" />
+      <Setter Property="BorderBrush" Value="#808080" />
+      <Setter Property="BorderThickness" Value="1" />
+      <EventSetter Event="Click" Handler="OnPaletteColorClick" />
+    </Style>
+  </UserControl.Resources>
+  <DockPanel LastChildFill="True">
+    <Border x:Name="ColorPreview" DockPanel.Dock="Left" Width="28" Margin="0,0,5,0"
+            BorderBrush="#808080" BorderThickness="1" CornerRadius="2"
+            AutomationProperties.Name="颜色预览" />
+    <ToggleButton x:Name="PaletteButton" DockPanel.Dock="Right" Content="调色板" Margin="5,0,0,0"
+                  Padding="8,2" AutomationProperties.Name="打开颜色调色板" />
+    <TextBox x:Name="ColorTextBox" MinWidth="108" TextChanged="OnColorTextChanged"
+             LostKeyboardFocus="OnColorTextLostFocus" KeyDown="OnColorTextKeyDown"
+             AutomationProperties.Name="颜色十六进制值" />
+    <Popup x:Name="PalettePopup" PlacementTarget="{Binding ElementName=PaletteButton}"
+           Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
+           IsOpen="{Binding IsChecked, ElementName=PaletteButton, Mode=TwoWay}">
+      <Border Background="White" BorderBrush="#808080" BorderThickness="1" Padding="8" CornerRadius="3">
+        <StackPanel>
+          <TextBlock Text="选择颜色" FontWeight="SemiBold" Margin="2,0,2,4" />
+          <UniformGrid Columns="8">
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#000000" Background="#000000" ToolTip="#000000" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#404040" Background="#404040" ToolTip="#404040" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#808080" Background="#808080" ToolTip="#808080" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#C0C0C0" Background="#C0C0C0" ToolTip="#C0C0C0" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFFFF" Background="#FFFFFF" ToolTip="#FFFFFF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF0000" Background="#FF0000" ToolTip="#FF0000" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF8000" Background="#FF8000" ToolTip="#FF8000" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFF00" Background="#FFFF00" ToolTip="#FFFF00" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#80FF00" Background="#80FF00" ToolTip="#80FF00" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00A000" Background="#00A000" ToolTip="#00A000" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00FFFF" Background="#00FFFF" ToolTip="#00FFFF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0080FF" Background="#0080FF" ToolTip="#0080FF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0000FF" Background="#0000FF" ToolTip="#0000FF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#8000FF" Background="#8000FF" ToolTip="#8000FF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF00FF" Background="#FF00FF" ToolTip="#FF00FF" />
+            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#A0522D" Background="#A0522D" ToolTip="#A0522D" />
+          </UniformGrid>
+          <DockPanel Margin="2,6,2,0">
+            <TextBlock x:Name="AlphaText" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
+            <TextBlock Text="透明度" VerticalAlignment="Center" Margin="0,0,8,0" />
+            <Slider x:Name="AlphaSlider" Minimum="0" Maximum="255" TickFrequency="1"
+                    ValueChanged="OnAlphaChanged" AutomationProperties.Name="颜色透明度" />
+          </DockPanel>
+          <TextBlock Text="也可在外部输入框手输 #RRGGBB 或 #AARRGGBB。" Foreground="DimGray" Margin="2,5,2,0" />
+        </StackPanel>
+      </Border>
+    </Popup>
+  </DockPanel>
+</UserControl>

@@ -1,4 +1,6 @@
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
+using Rmpp.Domain.Geometry;
 
 namespace Rmpp.Application.Abstractions;
 
@@ -7,7 +9,11 @@ public sealed record PrintSubmissionRequest
 {
     public required string PrinterId { get; init; }
     public required string MediaName { get; init; }
+    /// <summary>驱动未列出对应介质时使用的自定义物理尺寸；打印后端仍可拒绝不支持的尺寸。</summary>
+    public MmSize? CustomMediaSize { get; init; }
     public required IAsyncEnumerable<RenderScene> Scenes { get; init; }
+    /// <summary>解析模板包内图片资源，确保图片元素和二维码中心图标可进入本机打印后端。</summary>
+    public IRenderAssetProvider? AssetProvider { get; init; }
     public int Copies { get; init; } = 1;
     public PrintMediaOrientation Orientation { get; init; } = PrintMediaOrientation.Portrait;
     public int ResolutionDpi { get; init; } = 300;

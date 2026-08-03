@@ -6,6 +6,7 @@ using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Styles;
 using Rmpp.Rendering.Scene;
 using Rmpp.Rendering.Skia;
+using Rmpp.Rendering.Images;
 using Xunit;
 
 namespace Rmpp.Rendering.Tests.Skia;
@@ -81,6 +82,85 @@ public sealed class SkiaBarcodeReadbackTests
         if (symbology != BarcodeSymbology.Codabar)
         {
             Assert.Equal(content, decoded.Text);
+        }
+    }
+
+    [Fact]
+    public void QrCodeWithCenterIconRemainsReadable()
+    {
+        const string content = "RMPP OFFLINE QR CENTER ICON";
+        Guid iconId = Guid.NewGuid();
+        MmSize pageSize = new(50, 50);
+        RenderBarcodeCommand command = new()
+        {
+            SourceId = Guid.NewGuid(),
+            Transform = RenderTransform.Translation(5, 5),
+            LocalBounds = new MmRect(0, 0, 40, 40),
+            Content = content,
+            Symbology = BarcodeSymbology.QrCode,
+            QuietZoneMm = 2,
+            ErrorCorrectionLevel = 3,
+            ShowHumanReadableText = false,
+            HumanReadableTextStyle = new RenderTextStyle
+            {
+                FontFamily = "Microsoft YaHei",
+                FontSizePoints = 8,
+                Color = RgbaColor.Black,
+                LineSpacing = 1,
+            },
+            CenterIcon = new RenderImage { AssetId = iconId, FitMode = ImageFitMode.Contain },
+            CenterIconScale = 0.2,
+        };
+        RenderPage page = new()
+        {
+            PageNumber = 1,
+            Size = pageSize,
+            Clip = RenderClip.FromRectangle(new MmRect(0, 0, pageSize.Width, pageSize.Height)),
+            Commands = [command],
+        };
+        using SKBitmap rendered = new SkiaBitmapRenderer().Render(page, 300, new SolidIconProvider(iconId));
+        byte[] pixels = new byte[checked(rendered.Width * rendered.Height * 4)];
+        for (int y = 0; y < rendered.Height; y++)
+        {
+            for (int x = 0; x < rendered.Width; x++)
+            {
+                SKColor color = rendered.GetPixel(x, y);
+                int offset = (y * rendered.Width + x) * 4;
+                pixels[offset] = color.Red;
+                pixels[offset + 1] = color.Green;
+                pixels[offset + 2] = color.Blue;
+                pixels[offset + 3] = color.Alpha;
+            }
+        }
+
+        BinaryBitmap bitmap = new(new HybridBinarizer(new RGBLuminanceSource(
+            pixels,
+            rendered.Width,
+            rendered.Height,
+            RGBLuminanceSource.BitmapFormat.RGBA32)));
+        Result? decoded = new MultiFormatReader().decode(bitmap, new Dictionary<DecodeHintType, object>
+        {
+            [DecodeHintType.TRY_HARDER] = true,
+            [DecodeHintType.POSSIBLE_FORMATS] = new[] { BarcodeFormat.QR_CODE },
+        });
+
+        Assert.NotNull(decoded);
+        Assert.Equal(content, decoded.Text);
+    }
+
+    private sealed class SolidIconProvider(Guid assetId) : IRenderAssetProvider
+    {
+        public DecodedImage? Load(RenderImage image, double targetDpi)
+        {
+            if (image.AssetId != assetId)
+            {
+                return null;
+            }
+
+            SKBitmap bitmap = new(new SKImageInfo(64, 64, SKColorType.Bgra8888, SKAlphaType.Premul));
+            using SKCanvas canvas = new(bitmap);
+            canvas.Clear(SKColors.IndianRed);
+            return new DecodedImage(bitmap);
         }
     }
 

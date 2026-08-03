@@ -11,6 +11,11 @@ public sealed class WindowsPrinterCatalog(
             .ThenBy(static printer => printer.Identity.DisplayName, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
 
+    /// <summary>把可能较慢的驱动能力读取移出 UI 线程，同时保留同步接口供打印提交和测试使用。</summary>
+    public Task<IReadOnlyList<WindowsPrinterCapabilities>> GetPrintersAsync(
+        CancellationToken cancellationToken = default) =>
+        Task.Run(() => GetPrinters(cancellationToken), cancellationToken);
+
     public WindowsPrinterCapabilities GetRequired(
         string stablePrinterId,
         CancellationToken cancellationToken = default) =>

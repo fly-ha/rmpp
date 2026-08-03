@@ -1,6 +1,7 @@
 using Rmpp.Application.Abstractions;
 using Rmpp.Domain.Printing;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
 
 namespace Rmpp.Printing.Windows.Jobs;
 
@@ -11,6 +12,7 @@ public sealed record WindowsSpoolRequest
     public required string JobName { get; init; }
     public required WindowsPrintTicketDefinition Ticket { get; init; }
     public required IAsyncEnumerable<RenderScene> Scenes { get; init; }
+    public IRenderAssetProvider? AssetProvider { get; init; }
     public CalibrationProfile? Calibration { get; init; }
 }
 

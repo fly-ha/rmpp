@@ -6,6 +6,7 @@ using Rmpp.Domain.Printing;
 using Rmpp.Printing.Windows.Calibration;
 using Rmpp.Printing.Windows.Rendering;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
 
 namespace Rmpp.Printing.Windows.Jobs;
 
@@ -16,6 +17,8 @@ public sealed class StreamingDocumentPaginator : DocumentPaginator, IDisposable
     private readonly Queue<RenderPage> pendingPages = new();
     private readonly WpfPrintSceneRenderer renderer;
     private readonly CalibrationProfile? calibration;
+    private readonly IRenderAssetProvider? assetProvider;
+    private readonly double imageSourceDpi;
     private readonly IProgress<PrintSubmissionProgress>? progress;
     private readonly CancellationToken cancellationToken;
     private int renderedPages;
@@ -31,11 +34,15 @@ public sealed class StreamingDocumentPaginator : DocumentPaginator, IDisposable
         CalibrationProfile? calibration,
         Size pageSize,
         IProgress<PrintSubmissionProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IRenderAssetProvider? assetProvider = null,
+        double imageSourceDpi = 300)
     {
         this.scenes = scenes.GetAsyncEnumerator(cancellationToken);
         this.renderer = renderer;
         this.calibration = calibration;
+        this.assetProvider = assetProvider;
+        this.imageSourceDpi = imageSourceDpi;
         this.progress = progress;
         this.cancellationToken = cancellationToken;
         PageSize = pageSize;
@@ -67,7 +74,11 @@ public sealed class StreamingDocumentPaginator : DocumentPaginator, IDisposable
             return DocumentPage.Missing;
         }
 
-        WpfRenderedPage rendered = renderer.Render(page, CalibrationTransform.Create(calibration, page.Size));
+        WpfRenderedPage rendered = renderer.Render(
+            page,
+            CalibrationTransform.Create(calibration, page.Size),
+            assetProvider,
+            imageSourceDpi);
         DocumentPage documentPage = new(
             rendered.Visual,
             rendered.Size,

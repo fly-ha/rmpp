@@ -1,7 +1,9 @@
 using Rmpp.Domain.Documents;
+using Rmpp.Domain.Data;
 using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Styles;
+using Rmpp.Domain.Printing;
 using Rmpp.Infrastructure.Templates;
 
 namespace Rmpp.Infrastructure.Tests.Templates;
@@ -20,6 +22,16 @@ internal static class TemplatePackageTestData
         {
             Document = source with
             {
+                PrintSettings = new TemplatePrintSettings
+                {
+                    PreferredPrinterId = "printer-stable-id",
+                    PreferredPrinterDisplayName = "办公室打印机",
+                    OutputCount = 100,
+                    Copies = 2,
+                    CopyOrder = PrintCopyOrder.Collated,
+                    StartingCell = 3,
+                    IncludePrintableBackgrounds = false,
+                },
                 Assets = [asset],
                 Elements =
                 [
@@ -43,6 +55,17 @@ internal static class TemplatePackageTestData
                         LayerId = layerId,
                         Bounds = new MmRect(70, 10, 20, 20),
                         AssetId = assetId,
+                    },
+                    new BarcodeElement
+                    {
+                        Name = "QR with icon",
+                        LayerId = layerId,
+                        Bounds = new MmRect(100, 10, 30, 30),
+                        Symbology = BarcodeSymbology.QrCode,
+                        Content = ElementExpression.Literal("RMPP QR ICON"),
+                        ErrorCorrectionLevel = 3,
+                        CenterIconAssetId = assetId,
+                        CenterIconScale = 0.18,
                     },
                 ],
             },

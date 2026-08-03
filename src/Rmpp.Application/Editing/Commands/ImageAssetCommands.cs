@@ -35,9 +35,7 @@ public sealed class SetImageAssetCommand(Guid imageElementId, AssetReference? as
 
         if (target.AssetId is { } previousAssetId)
         {
-            bool remainsReferenced = document.Backgrounds.Any(background => background.AssetId == previousAssetId)
-                || elements.OfType<ImageElement>().Any(image => image.AssetId == previousAssetId);
-            if (!remainsReferenced)
+            if (!AssetReferenceUsage.IsReferenced(document, previousAssetId, elements))
             {
                 assets.RemoveAll(item => item.Id == previousAssetId);
             }

@@ -21,8 +21,12 @@ public sealed class PrintJobPlanner(
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(request.Document);
         PrintCopyPolicy copies = request.CopyPolicy.Validate();
-        DataSetSnapshot dataSet = request.DataSet ?? FixedDataSet();
-        IReadOnlyList<int> selectedIndices = request.RecordSelection.Resolve(dataSet.Rows.Count);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(request.OutputCount);
+        DataSetSnapshot dataSet = request.DataSet ?? FixedDataSet(request.OutputCount);
+        // 无数据模式的逻辑记录完全由输出数量生成，不能再被仅用于外部数据的记录范围截断。
+        IReadOnlyList<int> selectedIndices = request.DataSet is null
+            ? Enumerable.Range(0, request.OutputCount).ToArray()
+            : request.RecordSelection.Resolve(dataSet.Rows.Count);
         CultureInfo culture = string.IsNullOrWhiteSpace(request.CultureName)
             ? CultureInfo.InvariantCulture
             : CultureInfo.GetCultureInfo(request.CultureName);
@@ -195,18 +199,17 @@ public sealed class PrintJobPlanner(
             ? new MmSize(media.Size.Height, media.Size.Width)
             : media.Size;
 
-    private static DataSetSnapshot FixedDataSet() => new()
+    private static DataSetSnapshot FixedDataSet(int outputCount) => new()
     {
         SourceDisplayName = "Fixed content",
         Schema = new DataSchema { Columns = Array.Empty<DataColumnDefinition>() },
-        Rows =
-        [
-            new DataRowSnapshot
+        Rows = Enumerable.Range(0, outputCount)
+            .Select(index => new DataRowSnapshot
             {
-                Index = 0,
+                Index = index,
                 Values = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase),
-            },
-        ],
+            })
+            .ToArray(),
     };
 
     private sealed record LogicalPlacement(

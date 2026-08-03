@@ -9,6 +9,7 @@ using Rmpp.Domain.Data;
 using Rmpp.Domain.Documents;
 using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
+using Rmpp.Domain.Layout;
 using Rmpp.Domain.Styles;
 using Rmpp.Infrastructure.Templates;
 
@@ -27,6 +28,7 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     private DesignerTool activeTool;
     private string backgroundStatus = string.Empty;
     private string imageStatus = string.Empty;
+    private string barcodeIconStatus = string.Empty;
     private readonly IReadOnlyList<DesignerToolItem> tools = ToolItems;
 
     private static readonly DesignerToolItem[] ToolItems =
@@ -61,6 +63,37 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     public IReadOnlyDictionary<Guid, ReadOnlyMemory<byte>> AssetContents => session.State.AssetContents;
     public IReadOnlyList<DesignerToolItem> Tools => tools;
     public IReadOnlyList<ImageFitMode> BackgroundFitModes { get; } = Enum.GetValues<ImageFitMode>();
+    public IReadOnlyList<PageOrientation> PageOrientations { get; } = Enum.GetValues<PageOrientation>();
+    public string PageMediaName
+    {
+        get => Document.Page.Media.Name;
+        set => ChangePage(value, PageWidthMm, PageHeightMm, PageOrientation);
+    }
+    public double PageWidthMm
+    {
+        get => PageOrientation == PageOrientation.Landscape
+            ? Document.Page.Media.Size.Height
+            : Document.Page.Media.Size.Width;
+        set => ChangePage(PageMediaName, value, PageHeightMm, PageOrientation);
+    }
+    public double PageHeightMm
+    {
+        get => PageOrientation == PageOrientation.Landscape
+            ? Document.Page.Media.Size.Width
+            : Document.Page.Media.Size.Height;
+        set => ChangePage(PageMediaName, PageWidthMm, value, PageOrientation);
+    }
+    public PageOrientation PageOrientation
+    {
+        get => Document.Page.Media.Orientation;
+        set
+        {
+            if (value != PageOrientation)
+            {
+                ChangePage(PageMediaName, PageHeightMm, PageWidthMm, value);
+            }
+        }
+    }
 
     public DesignerTool ActiveTool
     {
@@ -80,6 +113,7 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     public string SnapIndicator { get => snapIndicator; private set => SetProperty(ref snapIndicator, value); }
     public string BackgroundStatus { get => backgroundStatus; private set => SetProperty(ref backgroundStatus, value); }
     public string ImageStatus { get => imageStatus; private set => SetProperty(ref imageStatus, value); }
+    public string BarcodeIconStatus { get => barcodeIconStatus; private set => SetProperty(ref barcodeIconStatus, value); }
     public bool HasBackground => ActiveBackground is not null;
 
     public bool ActiveBackgroundVisible
@@ -110,6 +144,15 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     {
         get => ActiveBackground?.PdfPageNumber ?? 1;
         set => ChangeActiveBackground(background => background with { PdfPageNumber = Math.Max(1, value) });
+    }
+
+    public double ActiveBackgroundPdfPageNumberValue
+    {
+        get => ActiveBackgroundPdfPageNumber;
+        set
+        {
+            if (double.IsFinite(value)) ActiveBackgroundPdfPageNumber = checked((int)value);
+        }
     }
 
     public ImageFitMode ActiveBackgroundFitMode
@@ -306,21 +349,11 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
 
         try
         {
-            string fileName = Path.GetFileName(filePath);
-            string mediaType = Path.GetExtension(fileName).ToLowerInvariant() switch
-            {
-                ".png" => "image/png",
-                ".jpg" or ".jpeg" => "image/jpeg",
-                _ => throw new InvalidDataException(DesktopText.Get("ImageUnsupportedType")),
-            };
-            byte[] bytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(true);
-            Guid assetId = Guid.NewGuid();
-            AssetReference asset = new(assetId, fileName, mediaType, AssetHashService.ComputeSha256(bytes));
-            _ = new AssetStore().Inspect(asset, bytes);
-            session.ImportAssets(new Dictionary<Guid, ReadOnlyMemory<byte>> { [assetId] = bytes });
+            (AssetReference asset, byte[] bytes) = await ReadImageAssetAsync(filePath, cancellationToken).ConfigureAwait(true);
+            session.ImportAssets(new Dictionary<Guid, ReadOnlyMemory<byte>> { [asset.Id] = bytes });
             if (dispatcher.Execute(new SetImageAssetCommand(image.Id, asset)))
             {
-                ImageStatus = DesktopText.Format("ImageImportedFormat", fileName);
+                ImageStatus = DesktopText.Format("ImageImportedFormat", asset.FileName);
             }
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
@@ -336,6 +369,53 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
         if (image is not null && dispatcher.Execute(new SetImageAssetCommand(image.Id, null)))
         {
             ImageStatus = DesktopText.Get("ImageCleared");
+        }
+    }
+
+    /// <summary>复用本地图片安全检查，把 PNG/JPEG 作为二维码中心图标加入当前模板会话。</summary>
+    public async Task ImportBarcodeCenterIconAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        BarcodeElement? barcode = Document.Elements.OfType<BarcodeElement>()
+            .FirstOrDefault(element => SelectedElementIds.Contains(element.Id));
+        if (barcode is null)
+        {
+            BarcodeIconStatus = DesktopText.Get("SelectQrCodeFirst");
+            return;
+        }
+        if (barcode.Symbology != BarcodeSymbology.QrCode)
+        {
+            BarcodeIconStatus = DesktopText.Get("QrIconQrOnly");
+            return;
+        }
+        if (barcode.IsLocked)
+        {
+            BarcodeIconStatus = DesktopText.Get("UnlockQrCodeFirst");
+            return;
+        }
+
+        try
+        {
+            (AssetReference asset, byte[] bytes) = await ReadImageAssetAsync(filePath, cancellationToken).ConfigureAwait(true);
+            session.ImportAssets(new Dictionary<Guid, ReadOnlyMemory<byte>> { [asset.Id] = bytes });
+            if (dispatcher.Execute(new SetBarcodeCenterIconAssetCommand(barcode.Id, asset)))
+            {
+                BarcodeIconStatus = DesktopText.Format("QrCenterIconImportedFormat", asset.FileName);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            BarcodeIconStatus = DesktopText.Format("QrCenterIconImportFailedFormat", exception.Message);
+        }
+    }
+
+    public void ClearSelectedBarcodeCenterIcon()
+    {
+        BarcodeElement? barcode = Document.Elements.OfType<BarcodeElement>()
+            .FirstOrDefault(element => SelectedElementIds.Contains(element.Id));
+        if (barcode is not null && dispatcher.Execute(new SetBarcodeCenterIconAssetCommand(barcode.Id, null)))
+        {
+            BarcodeIconStatus = DesktopText.Get("QrCenterIconCleared");
         }
     }
 
@@ -359,11 +439,23 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
 
     public void ClearGuides() => _ = dispatcher.Execute(new ChangeGuidesCommand(Array.Empty<GuideDefinition>()));
 
+    public void MoveGuide(Guid guideId, double positionMm)
+    {
+        GuideDefinition[] guides = Document.Guides
+            .Select(guide => guide.Id == guideId && !guide.IsLocked ? guide with { PositionMm = positionMm } : guide)
+            .ToArray();
+        _ = dispatcher.Execute(new ChangeGuidesCommand(guides));
+    }
+
     private void OnSessionChanged(object? sender, DocumentSessionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(Document));
         OnPropertyChanged(nameof(SelectedElementIds));
         OnPropertyChanged(nameof(AssetContents));
+        OnPropertyChanged(nameof(PageMediaName));
+        OnPropertyChanged(nameof(PageWidthMm));
+        OnPropertyChanged(nameof(PageHeightMm));
+        OnPropertyChanged(nameof(PageOrientation));
         NotifyBackgroundPropertiesChanged();
     }
 
@@ -389,7 +481,43 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(ActiveBackgroundLocked));
         OnPropertyChanged(nameof(ActiveBackgroundOpacity));
         OnPropertyChanged(nameof(ActiveBackgroundPdfPageNumber));
+        OnPropertyChanged(nameof(ActiveBackgroundPdfPageNumberValue));
         OnPropertyChanged(nameof(ActiveBackgroundFitMode));
+    }
+
+    private void ChangePage(string? name, double width, double height, PageOrientation orientation)
+    {
+        if (string.IsNullOrWhiteSpace(name) || !double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0)
+        {
+            return;
+        }
+
+        MmSize storedSize = orientation == PageOrientation.Landscape
+            ? new MmSize(height, width)
+            : new MmSize(width, height);
+        PageDefinition page = Document.Page with
+        {
+            Media = new MediaDefinition(name.Trim(), storedSize, orientation),
+        };
+        _ = dispatcher.Execute(new ChangePageDefinitionCommand(page));
+    }
+
+    private static async Task<(AssetReference Asset, byte[] Bytes)> ReadImageAssetAsync(
+        string filePath,
+        CancellationToken cancellationToken)
+    {
+        string fileName = Path.GetFileName(filePath);
+        string mediaType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".png" => "image/png",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            _ => throw new InvalidDataException(DesktopText.Get("ImageUnsupportedType")),
+        };
+        byte[] bytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(false);
+        Guid assetId = Guid.NewGuid();
+        AssetReference asset = new(assetId, fileName, mediaType, AssetHashService.ComputeSha256(bytes));
+        _ = new AssetStore().Inspect(asset, bytes);
+        return (asset, bytes);
     }
 
     private MmRect NormalizeCreationBounds(MmRect requested)

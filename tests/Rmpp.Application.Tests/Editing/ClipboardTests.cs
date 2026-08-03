@@ -75,6 +75,35 @@ public sealed class ClipboardTests
         Assert.Single(pastedDocument.Assets);
     }
 
+    [Fact]
+    public void QrCenterIconAssetIsTransferredAndRemapped()
+    {
+        AssetReference asset = new(Guid.NewGuid(), "qr-icon.png", "image/png", new string('d', 64));
+        BarcodeElement barcode = new()
+        {
+            Symbology = BarcodeSymbology.QrCode,
+            CenterIconAssetId = asset.Id,
+            Bounds = new MmRect(0, 0, 30, 30),
+        };
+        ElementClipboardPayload payload = new()
+        {
+            SourceDocumentId = Guid.NewGuid(),
+            Elements = [barcode],
+            Assets = [new ClipboardAsset(asset, new byte[] { 7, 8, 9 })],
+        };
+        (TemplateDocument targetDocument, _) = TestDocumentFactory.Create();
+        DocumentSession target = new(targetDocument);
+
+        ClipboardPasteResult result = ClipboardElementService.PreparePaste(target.State, payload);
+        TemplateDocument pastedDocument = result.Command.Execute(targetDocument);
+        BarcodeElement pasted = Assert.IsType<BarcodeElement>(Assert.Single(pastedDocument.Elements));
+
+        Assert.NotEqual(barcode.Id, pasted.Id);
+        Assert.NotNull(pasted.CenterIconAssetId);
+        Assert.Contains(pasted.CenterIconAssetId!.Value, result.AssetsToImport.Keys);
+        Assert.Contains(pastedDocument.Assets, item => item.Id == pasted.CenterIconAssetId);
+    }
+
     private sealed class MemoryClipboardAdapter : IClipboardAdapter
     {
         private ElementClipboardPayload? payload;

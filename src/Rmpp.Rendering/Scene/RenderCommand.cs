@@ -45,4 +45,7 @@ public sealed record RenderBarcodeCommand : RenderCommand
     public int ErrorCorrectionLevel { get; init; }
     public bool ShowHumanReadableText { get; init; }
     public required RenderTextStyle HumanReadableTextStyle { get; init; }
+    /// <summary>二维码中心的可选包内图片引用；后端必须在模块上方绘制同一白色保护区和图标。</summary>
+    public RenderImage? CenterIcon { get; init; }
+    public double CenterIconScale { get; init; } = BarcodeElement.DefaultCenterIconScale;
 }

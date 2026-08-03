@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Rmpp.Application.Abstractions;
 using Rmpp.Application.Data;
 using Rmpp.Application.Printing;
+using Rmpp.Application.Editing.Commands;
 using Rmpp.Desktop.Resources;
 using Rmpp.Desktop.Services;
 using Rmpp.Domain.Documents;
@@ -245,11 +246,19 @@ public sealed class MainWindowViewModel : ObservableObject
     private void OpenPrintSetup()
     {
         if (ActiveDocument is null) return;
-        PrintSetupViewModel viewModel = new(printJobPlanner, printJobValidator, printPreviewService, printerCatalog, printerService, renderExporter);
+        DocumentTabViewModel tab = ActiveDocument;
+        PrintSetupViewModel viewModel = new(
+            printJobPlanner,
+            printJobValidator,
+            printPreviewService,
+            printerCatalog,
+            printerService,
+            renderExporter,
+            settings => tab.Dispatcher.Execute(new ChangePrintSettingsCommand(settings)));
         viewModel.Load(
-            ActiveDocument.Session.State.Document,
-            ActiveDocument.DataSet,
-            ActiveDocument.Session.State.AssetContents);
+            tab.Session.State.Document,
+            tab.DataSet,
+            tab.Session.State.AssetContents);
         PrintSetupRequested?.Invoke(this, viewModel);
     }
 

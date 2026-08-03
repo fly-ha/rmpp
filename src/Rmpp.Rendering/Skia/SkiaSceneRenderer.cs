@@ -76,7 +76,7 @@ public sealed class SkiaSceneRenderer(
                     DrawImage(canvas, image, command.Opacity, assetProvider, options);
                     break;
                 case RenderBarcodeCommand barcode:
-                    DrawBarcode(canvas, barcode, command.Opacity, unitsPerMillimetre);
+                    DrawBarcode(canvas, barcode, command.Opacity, unitsPerMillimetre, assetProvider, options);
                     break;
                 default:
                     throw new NotSupportedException($"Unsupported render command: {command.GetType().Name}");
@@ -305,9 +305,15 @@ public sealed class SkiaSceneRenderer(
         DrawStroke(canvas, borderPath, command.Border, opacity);
     }
 
-    private void DrawBarcode(SKCanvas canvas, RenderBarcodeCommand command, double opacity, double unitsPerMillimetre)
+    private void DrawBarcode(
+        SKCanvas canvas,
+        RenderBarcodeCommand command,
+        double opacity,
+        double unitsPerMillimetre,
+        IRenderAssetProvider? assetProvider,
+        SkiaRenderOptions renderOptions)
     {
-        BarcodeOptions options = new()
+        BarcodeOptions barcodeOptions = new()
         {
             Symbology = command.Symbology,
             Content = command.Content,
@@ -315,7 +321,7 @@ public sealed class SkiaSceneRenderer(
             ErrorCorrectionLevel = command.ErrorCorrectionLevel,
             ShowHumanReadableText = command.ShowHumanReadableText,
         };
-        BarcodeMatrix matrix = barcodeService.Encode(options);
+        BarcodeMatrix matrix = barcodeService.Encode(barcodeOptions);
         double textHeight = command.ShowHumanReadableText && command.Symbology is not BarcodeSymbology.QrCode and not BarcodeSymbology.DataMatrix
             ? Math.Min(command.LocalBounds.Height * 0.25, command.HumanReadableTextStyle.FontSizePoints * PointsToMillimetres * 1.6)
             : 0;
@@ -377,6 +383,21 @@ public sealed class SkiaSceneRenderer(
             }
         }
 
+        if (command.Symbology == BarcodeSymbology.QrCode && command.CenterIcon is not null)
+        {
+            DrawBarcodeCenterIcon(
+                canvas,
+                command,
+                originX,
+                originY,
+                renderedWidth,
+                renderedHeight,
+                Math.Min(moduleWidth, moduleHeight),
+                opacity,
+                assetProvider,
+                renderOptions);
+        }
+
         if (textHeight > 0)
         {
             MmRect textBounds = new(
@@ -407,6 +428,69 @@ public sealed class SkiaSceneRenderer(
             }).ToArray();
             DrawGlyphRuns(canvas, shifted, command.HumanReadableTextStyle, opacity);
         }
+    }
+
+    /// <summary>在二维码模块中心绘制白色保护区和按比例 contain 的图标，保证位图、PDF 与打印使用同一几何。</summary>
+    private static void DrawBarcodeCenterIcon(
+        SKCanvas canvas,
+        RenderBarcodeCommand command,
+        double originX,
+        double originY,
+        double renderedWidth,
+        double renderedHeight,
+        double moduleSize,
+        double opacity,
+        IRenderAssetProvider? assetProvider,
+        SkiaRenderOptions options)
+    {
+        double symbolSide = Math.Min(renderedWidth, renderedHeight);
+        double iconSide = symbolSide * Math.Clamp(
+            command.CenterIconScale,
+            BarcodeElement.MinimumCenterIconScale,
+            BarcodeElement.MaximumCenterIconScale);
+        double protectionSide = Math.Min(symbolSide * 0.30, iconSide + moduleSize * 2);
+        double centerX = originX + renderedWidth / 2;
+        double centerY = originY + renderedHeight / 2;
+        MmRect protectionBounds = new(
+            centerX - protectionSide / 2,
+            centerY - protectionSide / 2,
+            protectionSide,
+            protectionSide);
+        using (SKPaint protection = CreatePaint(RgbaColor.White, opacity, SKPaintStyle.Fill))
+        {
+            canvas.DrawRect(ToRect(protectionBounds), protection);
+        }
+
+        using DecodedImage? decoded = assetProvider?.Load(command.CenterIcon!, options.ImageSourceDpi);
+        if (decoded is null)
+        {
+            if (!options.IgnoreMissingAssets)
+            {
+                throw new FileNotFoundException("QR center icon asset could not be resolved.");
+            }
+            return;
+        }
+
+        MmRect iconBounds = new(centerX - iconSide / 2, centerY - iconSide / 2, iconSide, iconSide);
+        ImageLayoutResult layout = ImageLayoutService.Layout(
+            decoded.Width,
+            decoded.Height,
+            iconBounds,
+            ImageFitMode.Contain,
+            crop: null,
+            options.ImageSourceDpi);
+        using SKImage image = SKImage.FromBitmap(decoded.Bitmap);
+        using SKPaint paint = new()
+        {
+            Color = new SKColor(255, 255, 255, OpacityByte(opacity)),
+            IsAntialias = true,
+        };
+        canvas.DrawImage(
+            image,
+            ToRect(layout.SourcePixels),
+            ToRect(layout.DestinationMm),
+            new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None),
+            paint);
     }
 
     private static SKPath RectanglePath(MmRect rectangle)

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Media;
@@ -7,7 +8,10 @@ using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Styles;
 using Rmpp.Printing.Windows.Printers;
 using Rmpp.Rendering.Barcodes;
+using Rmpp.Rendering.Images;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
+using SkiaSharp;
 using DomainTransform = Rmpp.Rendering.Scene.RenderTransform;
 using WpfBrush = System.Windows.Media.Brush;
 using WpfColor = System.Windows.Media.Color;
@@ -25,7 +29,11 @@ public sealed class WpfPrintSceneRenderer(
     private readonly IPrintImageResolver imageResolver = imageResolver ?? new LocalPrintImageResolver();
     private readonly BarcodeRenderService barcodeRenderer = barcodeRenderer ?? new();
 
-    public WpfRenderedPage Render(RenderPage page, DomainTransform? finalPhysicalTransform = null)
+    public WpfRenderedPage Render(
+        RenderPage page,
+        DomainTransform? finalPhysicalTransform = null,
+        IRenderAssetProvider? assetProvider = null,
+        double imageSourceDpi = 300)
     {
         ArgumentNullException.ThrowIfNull(page);
         DomainTransform finalTransform = finalPhysicalTransform ?? DomainTransform.Identity;
@@ -37,14 +45,19 @@ public sealed class WpfPrintSceneRenderer(
 
         foreach (RenderCommand command in page.Commands.OrderBy(static command => command.ZIndex))
         {
-            DrawCommand(context, command, finalTransform);
+            DrawCommand(context, command, finalTransform, assetProvider, imageSourceDpi);
         }
 
         context.Pop();
         return new WpfRenderedPage(visual, pageSizeDip);
     }
 
-    private void DrawCommand(DrawingContext context, RenderCommand command, DomainTransform finalTransform)
+    private void DrawCommand(
+        DrawingContext context,
+        RenderCommand command,
+        DomainTransform finalTransform,
+        IRenderAssetProvider? assetProvider,
+        double imageSourceDpi)
     {
         int pushed = 0;
         if (command.Opacity < 1)
@@ -70,10 +83,10 @@ public sealed class WpfPrintSceneRenderer(
                 DrawText(context, text);
                 break;
             case RenderImageCommand image:
-                DrawImage(context, image);
+                DrawImage(context, image, assetProvider, imageSourceDpi);
                 break;
             case RenderBarcodeCommand barcode:
-                DrawBarcode(context, barcode);
+                DrawBarcode(context, barcode, assetProvider, imageSourceDpi);
                 break;
             default:
                 throw new NotSupportedException($"不支持的打印命令：{command.GetType().Name}");
@@ -168,7 +181,11 @@ public sealed class WpfPrintSceneRenderer(
         return true;
     }
 
-    private void DrawImage(DrawingContext context, RenderImageCommand command)
+    private void DrawImage(
+        DrawingContext context,
+        RenderImageCommand command,
+        IRenderAssetProvider? assetProvider,
+        double imageSourceDpi)
     {
         WpfBrush? fill = ToBrush(command.Fill);
         if (fill is not null)
@@ -176,7 +193,7 @@ public sealed class WpfPrintSceneRenderer(
             context.DrawRectangle(fill, null, ToRect(command.LocalBounds));
         }
 
-        BitmapSource? bitmap = imageResolver.Resolve(command.Image);
+        BitmapSource? bitmap = ResolveImage(command.Image, assetProvider, imageSourceDpi);
         if (bitmap is not null)
         {
             Rect destination = CalculateImageDestination(command.LocalBounds, bitmap, command.Image.FitMode);
@@ -198,7 +215,11 @@ public sealed class WpfPrintSceneRenderer(
         }
     }
 
-    private void DrawBarcode(DrawingContext context, RenderBarcodeCommand command)
+    private void DrawBarcode(
+        DrawingContext context,
+        RenderBarcodeCommand command,
+        IRenderAssetProvider? assetProvider,
+        double imageSourceDpi)
     {
         BarcodeMatrix matrix = barcodeRenderer.Encode(new BarcodeOptions
         {
@@ -208,6 +229,7 @@ public sealed class WpfPrintSceneRenderer(
             ErrorCorrectionLevel = command.ErrorCorrectionLevel,
             ShowHumanReadableText = command.ShowHumanReadableText,
         });
+        context.DrawRectangle(Brushes.White, null, ToRect(command.LocalBounds));
         double availableWidth = Math.Max(0, command.LocalBounds.Width - command.QuietZoneMm * 2);
         double availableHeight = Math.Max(0, command.LocalBounds.Height - command.QuietZoneMm * 2);
         double module = Math.Min(availableWidth / matrix.Width, availableHeight / matrix.Height);
@@ -240,6 +262,59 @@ public sealed class WpfPrintSceneRenderer(
                 }
             }
         }
+
+        if (command.Symbology == BarcodeSymbology.QrCode && command.CenterIcon is not null)
+        {
+            double symbolSide = Math.Min(contentWidth, contentHeight);
+            double iconSide = symbolSide * Math.Clamp(
+                command.CenterIconScale,
+                BarcodeElement.MinimumCenterIconScale,
+                BarcodeElement.MaximumCenterIconScale);
+            double protectionSide = Math.Min(symbolSide * 0.30, iconSide + module * 2);
+            double centerX = originX + contentWidth / 2;
+            double centerY = originY + contentHeight / 2;
+            Rect protectionBounds = new(
+                centerX - protectionSide / 2,
+                centerY - protectionSide / 2,
+                protectionSide,
+                protectionSide);
+            context.DrawRectangle(Brushes.White, null, protectionBounds);
+
+            BitmapSource? icon = ResolveImage(command.CenterIcon, assetProvider, imageSourceDpi);
+            if (icon is not null)
+            {
+                MmRect iconBounds = new(centerX - iconSide / 2, centerY - iconSide / 2, iconSide, iconSide);
+                context.DrawImage(icon, CalculateImageDestination(iconBounds, icon, ImageFitMode.Contain));
+            }
+        }
+    }
+
+    private BitmapSource? ResolveImage(
+        RenderImage image,
+        IRenderAssetProvider? assetProvider,
+        double imageSourceDpi)
+    {
+        if (assetProvider is null)
+        {
+            return imageResolver.Resolve(image);
+        }
+
+        using DecodedImage? decoded = assetProvider.Load(image, imageSourceDpi);
+        if (decoded is null)
+        {
+            return imageResolver.Resolve(image);
+        }
+
+        using SKImage skImage = SKImage.FromBitmap(decoded.Bitmap);
+        using SKData data = skImage.Encode(SKEncodedImageFormat.Png, 100);
+        using MemoryStream stream = new(data.ToArray(), writable: false);
+        BitmapImage bitmap = new();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.StreamSource = stream;
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
     }
 
     private static Rect CalculateImageDestination(MmRect bounds, BitmapSource bitmap, ImageFitMode fitMode)

@@ -62,6 +62,25 @@ public sealed class SkiaBackendTests
         Assert.True(bytes.Length > 500);
     }
 
+    [Fact]
+    public void ElementOpacityMultipliesTheFillAlpha()
+    {
+        RenderPathCommand command = RectangleCommand(new MmRect(0, 0, 10, 10)) with
+        {
+            Opacity = 0.5,
+            Fill = new RenderSolidFill(new RgbaColor(255, 0, 0, 128)),
+        };
+        RenderPage page = Page(new MmSize(10, 10), [command]);
+
+        using SKBitmap bitmap = new SkiaBitmapRenderer().Render(
+            page,
+            25.4,
+            options: new SkiaRenderOptions { PageColor = RgbaColor.Transparent });
+
+        SKColor center = bitmap.GetPixel(5, 5);
+        Assert.InRange(center.Alpha, 63, 65);
+    }
+
     private static RenderPage Page(MmSize size, IReadOnlyList<RenderCommand> commands) => new()
     {
         PageNumber = 1,

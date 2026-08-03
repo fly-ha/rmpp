@@ -29,5 +29,6 @@ public sealed class SkiaPdfExporter(SkiaSceneRenderer? sceneRenderer = null)
         }
 
         document.Close();
+        destination.Flush();
     }
 }

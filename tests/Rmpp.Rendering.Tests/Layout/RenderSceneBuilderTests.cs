@@ -167,6 +167,29 @@ public sealed class RenderSceneBuilderTests
         Assert.Equal(new MmPoint(40, 60), command.Transform.Transform(new MmPoint(0, 0)));
     }
 
+    [Fact]
+    public void QrCenterIconEntersSharedSceneAndForcesHighErrorCorrection()
+    {
+        LayerDefinition layer = new(Guid.NewGuid(), "Default");
+        Guid iconId = Guid.NewGuid();
+        BarcodeElement barcode = new()
+        {
+            LayerId = layer.Id,
+            Bounds = new MmRect(10, 10, 30, 30),
+            Symbology = BarcodeSymbology.QrCode,
+            Content = ElementExpression.Literal("RMPP QR ICON"),
+            CenterIconAssetId = iconId,
+            CenterIconScale = 0.2,
+        };
+
+        RenderBarcodeCommand command = Assert.IsType<RenderBarcodeCommand>(Assert.Single(
+            Assert.Single(new RenderSceneBuilder().Build(CreateDocument([layer], [barcode])).Pages).Commands));
+
+        Assert.Equal(iconId, command.CenterIcon?.AssetId);
+        Assert.Equal(0.2, command.CenterIconScale);
+        Assert.Equal(3, command.ErrorCorrectionLevel);
+    }
+
     private static RectangleElement Rectangle(Guid layerId, string name, int zIndex) =>
         new()
         {

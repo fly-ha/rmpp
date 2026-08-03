@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Rmpp.Desktop.ViewModels;
 
 namespace Rmpp.Desktop.Views;
@@ -10,27 +11,35 @@ public partial class ExpressionEditorView : UserControl
 
     private void OnDropField(object sender, DragEventArgs e)
     {
-        if (DataContext is ExpressionEditorViewModel viewModel && e.Data.GetData(DataFormats.StringFormat) is string value)
+        if (e.Data.GetData(DataFormats.StringFormat) is string value)
         {
-            viewModel.InsertFieldCommand.Execute(value.Trim('[', ']'));
+            InsertAtCaret(value);
             e.Handled = true;
         }
     }
 
-    private void OnFieldSelected(object sender, SelectionChangedEventArgs e)
+    private void OnFieldActivated(object sender, MouseButtonEventArgs e) => InsertSelectedField();
+    private void OnFunctionActivated(object sender, MouseButtonEventArgs e) => InsertSelectedFunction();
+    private void OnFieldKeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) { InsertSelectedField(); e.Handled = true; } }
+    private void OnFunctionKeyDown(object sender, KeyEventArgs e) { if (e.Key == Key.Enter) { InsertSelectedFunction(); e.Handled = true; } }
+
+    private void InsertSelectedField()
     {
-        if (sender is ListBox { SelectedItem: string field } && DataContext is ExpressionEditorViewModel viewModel)
-        {
-            viewModel.InsertFieldCommand.Execute(field);
-        }
+        if (ExpressionFieldsList.SelectedItem is string field) InsertAtCaret($"[{field}]");
     }
 
-    private void OnFunctionSelected(object sender, SelectionChangedEventArgs e)
+    private void InsertSelectedFunction()
     {
-        if (sender is ListBox { SelectedItem: string function } && DataContext is ExpressionEditorViewModel viewModel)
-        {
-            viewModel.Source += (viewModel.Source.Length == 0 ? string.Empty : " + ") + function + "()";
-            viewModel.ValidateCommand.Execute(null);
-        }
+        if (ExpressionFunctionsList.SelectedItem is string function) InsertAtCaret(function + "()");
+    }
+
+    private void InsertAtCaret(string text)
+    {
+        int caret = Editor.CaretIndex;
+        string source = Editor.Text ?? string.Empty;
+        Editor.Text = source.Insert(caret, text);
+        Editor.CaretIndex = caret + text.Length;
+        Editor.Focus();
+        if (DataContext is ExpressionEditorViewModel viewModel) viewModel.ValidateCommand.Execute(null);
     }
 }

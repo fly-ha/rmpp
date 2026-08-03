@@ -32,11 +32,26 @@ public sealed class PrintTicketFactory
             throw new ArgumentOutOfRangeException(nameof(request), "打印份数必须在 1–999 之间。");
         }
 
-        WindowsMediaDefinition media = capabilities.Media.FirstOrDefault(candidate =>
+        WindowsMediaDefinition? media = capabilities.Media.FirstOrDefault(candidate =>
             string.Equals(candidate.Key, request.MediaName, StringComparison.Ordinal)
             || string.Equals(candidate.DriverName, request.MediaName, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(candidate.DisplayName, request.MediaName, StringComparison.OrdinalIgnoreCase))
-            ?? throw new InvalidOperationException($"打印机不支持介质：{request.MediaName}");
+            || string.Equals(candidate.DisplayName, request.MediaName, StringComparison.OrdinalIgnoreCase));
+        if (media is null && request.CustomMediaSize is { } customSize)
+        {
+            media = new WindowsMediaDefinition
+            {
+                Key = request.MediaName,
+                DisplayName = $"自定义 {customSize.Width:0.###} × {customSize.Height:0.###} mm",
+                DriverName = "Custom",
+                Size = customSize,
+                PrintableArea = new Rmpp.Domain.Geometry.MmRect(0, 0, customSize.Width, customSize.Height),
+                IsCustom = true,
+            };
+        }
+        if (media is null)
+        {
+            throw new InvalidOperationException($"打印机不支持介质：{request.MediaName}");
+        }
         if (!capabilities.Orientations.Contains(request.Orientation))
         {
             throw new InvalidOperationException($"打印机不支持方向：{request.Orientation}");

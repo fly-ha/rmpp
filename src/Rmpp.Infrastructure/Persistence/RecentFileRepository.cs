@@ -6,6 +6,24 @@ namespace Rmpp.Infrastructure.Persistence;
 /// <summary>维护有界最近文件列表，仅保存路径和非敏感显示元数据。</summary>
 public sealed class RecentFileRepository(SqliteAppDatabase database)
 {
+    /// <summary>删除指定类型和路径的最近文件记录，不删除实际文件。</summary>
+    public async Task RemoveAsync(
+        RecentFileKind kind,
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        string normalized = SqlitePersistenceHelpers.NormalizePath(path);
+        await database.ExecuteWithRetryAsync(async token =>
+        {
+            await using SqliteConnection connection = await database.OpenConnectionAsync(token);
+            await using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM recent_files WHERE kind = $kind AND normalized_path = $path;";
+            command.Parameters.AddWithValue("$kind", (int)kind);
+            command.Parameters.AddWithValue("$path", normalized);
+            await command.ExecuteNonQueryAsync(token);
+        }, cancellationToken);
+    }
+
     public async Task AddAsync(
         RecentFileEntry entry,
         int maximumEntriesPerKind = 20,

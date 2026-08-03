@@ -33,6 +33,18 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
     public Array HatchPatterns => hatchPatterns;
 
     public string TypeName => SelectedElement?.GetType().Name ?? DesktopText.Get("NotSelected");
+    public bool HasSelection => SelectedElement is not null;
+    public bool IsTextElement => SelectedElement is TextElement;
+    public bool IsDateTimeElement => SelectedElement is DateTimeElement;
+    public bool IsSerialElement => SelectedElement is SerialElement;
+    public bool IsBarcodeElement => SelectedElement is BarcodeElement;
+    public bool IsImageElement => SelectedElement is ImageElement;
+    public bool SupportsPointEditing => SelectedElement is LineElement or PolylineElement or PolygonElement;
+    public bool SupportsArcEditing => SelectedElement is ArcElement or SectorElement;
+    public bool SupportsCornerRadius => SelectedElement is RectangleElement;
+    public bool SupportsFont => SelectedElement is TextElement or DateTimeElement or SerialElement;
+    public bool SupportsStroke => SelectedElement is ShapeElement or TextElement or ImageElement;
+    public bool SupportsFill => SelectedElement is RectangleElement or EllipseElement or SectorElement or PolygonElement or TextElement or ImageElement;
     public string? Name { get => SelectedElement?.Name; set => Change(element => element with { Name = value ?? string.Empty }, "SetName"); }
     public double? X { get => SelectedElement?.Bounds.X; set => SetBounds(value, static (bounds, v) => new MmRect(v, bounds.Y, bounds.Width, bounds.Height)); }
     public double? Y { get => SelectedElement?.Bounds.Y; set => SetBounds(value, static (bounds, v) => new MmRect(bounds.X, v, bounds.Width, bounds.Height)); }
@@ -65,6 +77,47 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
             _ => element,
         }, "SetContent");
     }
+
+    public string? DateTimeFormat
+    {
+        get => (SelectedElement as DateTimeElement)?.Definition.Format;
+        set => Change(element => element is DateTimeElement dateTime
+            ? dateTime with { Definition = dateTime.Definition with { Format = value ?? string.Empty } }
+            : element, "SetContent");
+    }
+
+    public string? SerialPrefix
+    {
+        get => (SelectedElement as SerialElement)?.Definition.Prefix;
+        set => Change(element => element is SerialElement serial
+            ? serial with { Definition = serial.Definition with { Prefix = value ?? string.Empty } }
+            : element, "SetContent");
+    }
+
+    public string? SerialSuffix
+    {
+        get => (SelectedElement as SerialElement)?.Definition.Suffix;
+        set => Change(element => element is SerialElement serial
+            ? serial with { Definition = serial.Definition with { Suffix = value ?? string.Empty } }
+            : element, "SetContent");
+    }
+
+    public int? SerialMinimumDigits
+    {
+        get => (SelectedElement as SerialElement)?.Definition.MinimumDigits;
+        set => Change(element => element is SerialElement serial
+            ? serial with { Definition = serial.Definition with { MinimumDigits = Math.Max(0, value ?? 0) } }
+            : element, "SetContent");
+    }
+
+    public string? ImageFileName => SelectedElement is ImageElement { AssetId: { } assetId }
+        ? session.State.Document.Assets.FirstOrDefault(asset => asset.Id == assetId)?.FileName
+        : null;
+    public string ImageDisplayName => ImageFileName
+        ?? (SelectedElement as ImageElement)?.VariablePath?.Source
+        ?? DesktopText.Get("ImageNotSelected");
+    public bool HasImageAsset => SelectedElement is ImageElement { AssetId: not null }
+        or ImageElement { VariablePath: not null };
 
     public BarcodeSymbology? Symbology
     {
@@ -269,11 +322,15 @@ public sealed class PropertiesViewModel : ObservableObject, IDisposable
         foreach (string property in new[]
         {
             nameof(SelectedElement), nameof(TypeName), nameof(Name), nameof(X), nameof(Y), nameof(Width), nameof(Height),
+            nameof(HasSelection), nameof(IsTextElement), nameof(IsDateTimeElement), nameof(IsSerialElement),
+            nameof(IsBarcodeElement), nameof(IsImageElement), nameof(SupportsPointEditing), nameof(SupportsArcEditing),
+            nameof(SupportsCornerRadius), nameof(SupportsFont), nameof(SupportsStroke), nameof(SupportsFill),
             nameof(Rotation), nameof(Opacity), nameof(IsVisible), nameof(IsPrintable), nameof(IsLocked), nameof(Content),
             nameof(Symbology), nameof(ImageFit), nameof(StrokeWidth), nameof(FillMode), nameof(HatchPattern), nameof(ValidationSummary),
             nameof(Points),
             nameof(FontFamily), nameof(FontSize), nameof(StartAngle), nameof(SweepDegrees), nameof(CornerRadius),
-            nameof(SerialStart), nameof(SerialStep), nameof(ImageCrop),
+            nameof(SerialStart), nameof(SerialStep), nameof(SerialPrefix), nameof(SerialSuffix), nameof(SerialMinimumDigits),
+            nameof(DateTimeFormat), nameof(ImageCrop), nameof(ImageFileName), nameof(ImageDisplayName), nameof(HasImageAsset),
         })
         {
             OnPropertyChanged(property);

@@ -26,6 +26,7 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     private string snapIndicator = string.Empty;
     private DesignerTool activeTool;
     private string backgroundStatus = string.Empty;
+    private string imageStatus = string.Empty;
     private readonly IReadOnlyList<DesignerToolItem> tools = ToolItems;
 
     private static readonly DesignerToolItem[] ToolItems =
@@ -78,6 +79,7 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
     public double GridSpacingMm { get => gridSpacingMm; set => SetProperty(ref gridSpacingMm, Math.Clamp(value, 0.1, 100)); }
     public string SnapIndicator { get => snapIndicator; private set => SetProperty(ref snapIndicator, value); }
     public string BackgroundStatus { get => backgroundStatus; private set => SetProperty(ref backgroundStatus, value); }
+    public string ImageStatus { get => imageStatus; private set => SetProperty(ref imageStatus, value); }
     public bool HasBackground => ActiveBackground is not null;
 
     public bool ActiveBackgroundVisible
@@ -282,6 +284,58 @@ public sealed class DesignerViewModel : ObservableObject, IDisposable
         {
             _ = dispatcher.Execute(new DeleteBackgroundAssetCommand(background.Id));
             BackgroundStatus = DesktopText.Get("BackgroundDeleted");
+        }
+    }
+
+    /// <summary>把安全的本地 PNG/JPEG 复制进模板会话，并把当前图片元素可撤销地绑定到新资源。</summary>
+    public async Task ImportImageAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ImageElement? image = Document.Elements.OfType<ImageElement>()
+            .FirstOrDefault(element => SelectedElementIds.Contains(element.Id));
+        if (image is null)
+        {
+            ImageStatus = DesktopText.Get("SelectImageElementFirst");
+            return;
+        }
+        if (image.IsLocked)
+        {
+            ImageStatus = DesktopText.Get("UnlockImageElementFirst");
+            return;
+        }
+
+        try
+        {
+            string fileName = Path.GetFileName(filePath);
+            string mediaType = Path.GetExtension(fileName).ToLowerInvariant() switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                _ => throw new InvalidDataException(DesktopText.Get("ImageUnsupportedType")),
+            };
+            byte[] bytes = await File.ReadAllBytesAsync(filePath, cancellationToken).ConfigureAwait(true);
+            Guid assetId = Guid.NewGuid();
+            AssetReference asset = new(assetId, fileName, mediaType, AssetHashService.ComputeSha256(bytes));
+            _ = new AssetStore().Inspect(asset, bytes);
+            session.ImportAssets(new Dictionary<Guid, ReadOnlyMemory<byte>> { [assetId] = bytes });
+            if (dispatcher.Execute(new SetImageAssetCommand(image.Id, asset)))
+            {
+                ImageStatus = DesktopText.Format("ImageImportedFormat", fileName);
+            }
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            ImageStatus = DesktopText.Format("ImageImportFailedFormat", exception.Message);
+        }
+    }
+
+    public void ClearSelectedImage()
+    {
+        ImageElement? image = Document.Elements.OfType<ImageElement>()
+            .FirstOrDefault(element => SelectedElementIds.Contains(element.Id));
+        if (image is not null && dispatcher.Execute(new SetImageAssetCommand(image.Id, null)))
+        {
+            ImageStatus = DesktopText.Get("ImageCleared");
         }
     }
 

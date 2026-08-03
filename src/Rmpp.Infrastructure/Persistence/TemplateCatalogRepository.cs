@@ -6,6 +6,20 @@ namespace Rmpp.Infrastructure.Persistence;
 /// <summary>维护可重建模板目录、标签、缺失状态和重复文档身份。</summary>
 public sealed class TemplateCatalogRepository(SqliteAppDatabase database)
 {
+    /// <summary>按模板绝对路径移除可重建的目录元数据，不触碰模板文件本身。</summary>
+    public async Task RemoveAsync(string path, CancellationToken cancellationToken = default)
+    {
+        string normalized = SqlitePersistenceHelpers.NormalizePath(path);
+        await database.ExecuteWithRetryAsync(async token =>
+        {
+            await using SqliteConnection connection = await database.OpenConnectionAsync(token);
+            await using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "DELETE FROM template_catalog WHERE normalized_path = $path;";
+            command.Parameters.AddWithValue("$path", normalized);
+            await command.ExecuteNonQueryAsync(token);
+        }, cancellationToken);
+    }
+
     public async Task UpsertAsync(TemplateCatalogEntry entry, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(entry);

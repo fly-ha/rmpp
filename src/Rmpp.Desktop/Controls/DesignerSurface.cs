@@ -10,6 +10,9 @@ using Rmpp.Domain.Elements;
 using Rmpp.Domain.Geometry;
 using Rmpp.Domain.Styles;
 using Rmpp.Infrastructure.Pdf;
+using Rmpp.Rendering.Layout;
+using Rmpp.Rendering.Skia;
+using SkiaSharp;
 
 namespace Rmpp.Desktop.Controls;
 
@@ -49,6 +52,12 @@ public sealed class DesignerSurface : FrameworkElement
     private Point? creationCurrent;
     private Dictionary<BackgroundImageKey, ImageSource> backgroundImages = [];
     private int backgroundRefreshVersion;
+    private readonly RenderSceneBuilder renderSceneBuilder = new();
+    private readonly SkiaBitmapRenderer bitmapRenderer = new();
+    private TemplateDocument? renderedDocument;
+    private IReadOnlyDictionary<Guid, ReadOnlyMemory<byte>>? renderedAssetContents;
+    private BitmapSource? renderedElementLayer;
+    private double renderedZoom;
 
     public DesignerSurface()
     {
@@ -143,6 +152,10 @@ public sealed class DesignerSurface : FrameworkElement
             drawingContext.DrawRectangle(placeholderBrush, placeholderPen,
                 new Rect(background.Bounds.X, background.Bounds.Y, background.Bounds.Width, background.Bounds.Height));
         }
+        if (GetElementLayer() is { } elementLayer)
+        {
+            drawingContext.DrawImage(elementLayer, new Rect(0, 0, pageSize.Width, pageSize.Height));
+        }
         foreach (GuideDefinition guide in Document.Guides)
         {
             Pen guidePen = new(SystemParameters.HighContrast ? SystemColors.HighlightBrush : Brushes.DeepSkyBlue, 1 / scale);
@@ -159,7 +172,7 @@ public sealed class DesignerSurface : FrameworkElement
         HashSet<Guid> visibleLayers = Document.Layers.Where(static layer => layer.IsVisible).Select(static layer => layer.Id).ToHashSet();
         foreach (TemplateElement element in Document.Elements.Where(element => element.IsVisible && visibleLayers.Contains(element.LayerId)).OrderBy(static element => element.ZIndex))
         {
-            DrawElement(drawingContext, element, scale);
+            DrawElementOverlay(drawingContext, element, scale);
         }
 
         if (creationStart is { } start && creationCurrent is { } current)
@@ -337,17 +350,18 @@ public sealed class DesignerSurface : FrameworkElement
     private static bool IsNearBottomRight(MmPoint point, MmRect bounds, double tolerance) =>
         Math.Abs(point.X - bounds.Right) <= tolerance && Math.Abs(point.Y - bounds.Bottom) <= tolerance;
 
-    private void DrawElement(DrawingContext context, TemplateElement element, double scale)
+    /// <summary>只绘制编辑器专属的图片占位与选择手柄，元素正文由统一 RenderScene 负责。</summary>
+    private void DrawElementOverlay(DrawingContext context, TemplateElement element, double scale)
     {
         Rect bounds = new(element.Bounds.X, element.Bounds.Y, element.Bounds.Width, element.Bounds.Height);
-        Brush fill = SystemParameters.HighContrast ? Brushes.Transparent : element switch
+        if (element is ImageElement { AssetId: null, VariablePath: null })
         {
-            TextElement or DateTimeElement or SerialElement => new SolidColorBrush(Color.FromArgb(28, 25, 118, 210)),
-            BarcodeElement => new SolidColorBrush(Color.FromArgb(35, 0, 0, 0)),
-            ImageElement => new SolidColorBrush(Color.FromArgb(35, 76, 175, 80)),
-            _ => Brushes.Transparent,
-        };
-        context.DrawRectangle(fill, new Pen(SystemColors.WindowTextBrush, 0.25), bounds);
+            Pen placeholder = new(Brushes.SeaGreen, 1 / scale) { DashStyle = DashStyles.Dash };
+            context.DrawRectangle(new SolidColorBrush(Color.FromArgb(18, 46, 125, 50)), placeholder, bounds);
+            context.DrawLine(placeholder, bounds.TopLeft, bounds.BottomRight);
+            context.DrawLine(placeholder, bounds.TopRight, bounds.BottomLeft);
+        }
+
         if (SelectedElementIds?.Contains(element.Id) == true)
         {
             Brush selectionBrush = SystemParameters.HighContrast ? SystemColors.HighlightBrush : Brushes.DodgerBlue;
@@ -359,6 +373,69 @@ public sealed class DesignerSurface : FrameworkElement
                 context.DrawRectangle(SystemColors.WindowBrush, new Pen(selectionBrush, 1 / scale), new Rect(point.X - handle / 2, point.Y - handle / 2, handle, handle));
             }
         }
+    }
+
+    /// <summary>把当前文档的可见元素构建为透明 Skia 图层，并按文档及资源快照缓存。</summary>
+    private BitmapSource? GetElementLayer()
+    {
+        TemplateDocument? document = Document;
+        IReadOnlyDictionary<Guid, ReadOnlyMemory<byte>> contents = AssetContents
+            ?? new Dictionary<Guid, ReadOnlyMemory<byte>>();
+        if (document is null)
+        {
+            return null;
+        }
+
+        if (ReferenceEquals(renderedDocument, document)
+            && ReferenceEquals(renderedAssetContents, contents)
+            && Math.Abs(renderedZoom - Zoom) < 0.001
+            && renderedElementLayer is not null)
+        {
+            return renderedElementLayer;
+        }
+
+        try
+        {
+            TemplateDocument elementDocument = document with { Backgrounds = Array.Empty<BackgroundDefinition>() };
+            Rmpp.Rendering.Scene.RenderPage page = renderSceneBuilder.Build(
+                elementDocument,
+                new RenderContext { Target = RenderTarget.Editor }).Pages[0];
+            PackageRenderAssetProvider provider = new(document, contents);
+            double previewDpi = Math.Clamp(96 * Math.Max(1, Zoom), 96, 288);
+            using SKBitmap bitmap = bitmapRenderer.Render(
+                page,
+                dpi: previewDpi,
+                provider,
+                new SkiaRenderOptions
+                {
+                    PageColor = new RgbaColor(0, 0, 0, 0),
+                    IgnoreMissingAssets = true,
+                    ImageSourceDpi = previewDpi,
+                });
+            BitmapSource source = BitmapSource.Create(
+                bitmap.Width,
+                bitmap.Height,
+                previewDpi,
+                previewDpi,
+                PixelFormats.Bgra32,
+                null,
+                bitmap.GetPixels(),
+                checked(bitmap.RowBytes * bitmap.Height),
+                bitmap.RowBytes);
+            source.Freeze();
+            renderedDocument = document;
+            renderedAssetContents = contents;
+            renderedElementLayer = source;
+            renderedZoom = Zoom;
+        }
+        catch (Exception exception) when (exception is IOException or ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            renderedDocument = document;
+            renderedAssetContents = contents;
+            renderedElementLayer = null;
+        }
+
+        return renderedElementLayer;
     }
 
     private static void DrawBackgroundImage(
@@ -401,8 +478,15 @@ public sealed class DesignerSurface : FrameworkElement
             height);
     }
 
-    private static void OnBackgroundSourceChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e) =>
-        ((DesignerSurface)sender).RefreshBackgroundImages();
+    private static void OnBackgroundSourceChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+    {
+        DesignerSurface surface = (DesignerSurface)sender;
+        surface.renderedDocument = null;
+        surface.renderedAssetContents = null;
+        surface.renderedElementLayer = null;
+        surface.renderedZoom = 0;
+        surface.RefreshBackgroundImages();
+    }
 
     /// <summary>在 UI 线程外栅格化 PDF，并用版本号丢弃过期加载结果，避免快速切换文档时串用背景。</summary>
     private async void RefreshBackgroundImages()

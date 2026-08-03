@@ -34,7 +34,6 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         DeleteCommand = new RelayCommand(DeleteSelection, () => Session.State.SelectedElementIds.Count > 0);
         DuplicateCommand = new RelayCommand(Designer.DuplicateSelection, () => Session.State.SelectedElementIds.Count > 0);
         Session.Changed += OnSessionChanged;
-        OriginalTemplatePath = originalTemplatePath;
     }
 
     public DocumentSession Session { get; }
@@ -51,7 +50,7 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         .ToDictionary(
             static asset => asset.Id,
             asset => Session.State.AssetContents[asset.Id].ToArray());
-    public string? OriginalTemplatePath { get; }
+    public string? OriginalTemplatePath => Session.State.FilePath;
     public IRelayCommand UndoCommand { get; }
     public IRelayCommand RedoCommand { get; }
     public IRelayCommand DeleteCommand { get; }
@@ -108,6 +107,7 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(DisplayTitle));
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(Assets));
+        OnPropertyChanged(nameof(OriginalTemplatePath));
         UndoCommand.NotifyCanExecuteChanged();
         RedoCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();

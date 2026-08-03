@@ -4,19 +4,42 @@
         Title="设置与模板目录" Width="760" Height="560" WindowStartupLocation="CenterOwner"
         KeyboardNavigation.TabNavigation="Cycle">
   <TabControl x:Name="SettingsTabsControl" Margin="12" AutomationProperties.Name="{DynamicResource SettingsTabs}">
-    <TabItem Header="设置"><StackPanel Margin="12">
-      <TextBlock Text="{Binding Settings.StorageModeText}" FontWeight="Bold"/><TextBlock Text="{Binding Settings.DataDirectory}" TextWrapping="Wrap"/>
-      <TextBlock Text="语言" Margin="0,10,0,0"/><TextBox Text="{Binding Settings.Language}" AutomationProperties.Name="显示语言"/>
-      <TextBlock Text="最近路径数量" Margin="0,10,0,0"/><TextBox Text="{Binding Settings.RecentMaximumEntries}" AutomationProperties.Name="最近路径最大数量"/>
-      <TextBlock Text="模板扫描目录（每行一个）" Margin="0,10,0,0"/><TextBox Text="{Binding Settings.CatalogDirectoriesText}" AcceptsReturn="True" Height="140" AutomationProperties.Name="模板扫描目录"/>
-      <Button Content="保存设置" Command="{Binding Settings.SaveCommand}" Margin="0,10,0,0"/><TextBlock Text="{Binding Settings.StatusText}"/>
-    </StackPanel></TabItem>
-    <TabItem Header="模板目录"><DockPanel Margin="12">
-      <Button DockPanel.Dock="Top" Content="刷新目录" Command="{Binding Catalog.RefreshCommand}" Margin="0,0,0,8"/>
-      <TextBlock DockPanel.Dock="Bottom" Text="{Binding Catalog.StatusText}" Margin="0,8,0,0"/>
-      <DataGrid x:Name="TemplateCatalogGrid" ItemsSource="{Binding Catalog.Entries}" AutoGenerateColumns="False" IsReadOnly="True" AutomationProperties.Name="{DynamicResource TemplateCatalogGrid}">
-        <DataGrid.Columns><DataGridTextColumn Header="标题" Binding="{Binding Title}"/><DataGridTextColumn Header="状态" Binding="{Binding Status}"/><DataGridTextColumn Header="路径" Binding="{Binding Path}" Width="*"/></DataGrid.Columns>
-      </DataGrid>
-    </DockPanel></TabItem>
+    <TabItem Header="设置">
+      <StackPanel Margin="12">
+        <TextBlock Text="{Binding Settings.StorageModeText}" FontWeight="Bold" />
+        <TextBlock Text="{Binding Settings.DataDirectory}" TextWrapping="Wrap" />
+        <TextBlock Text="语言" Margin="0,10,0,0" />
+        <TextBox Text="{Binding Settings.Language}" AutomationProperties.Name="显示语言" />
+        <TextBlock Text="最近路径数量" Margin="0,10,0,0" />
+        <TextBox Text="{Binding Settings.RecentMaximumEntries}" AutomationProperties.Name="最近路径最大数量" />
+        <TextBlock Text="模板扫描目录（每行一个）" Margin="0,10,0,0" />
+        <TextBox Text="{Binding Settings.CatalogDirectoriesText}" AcceptsReturn="True" Height="140" AutomationProperties.Name="模板扫描目录" />
+        <Button Content="保存设置" Command="{Binding Settings.SaveCommand}" Margin="0,10,0,0" />
+        <TextBlock Text="{Binding Settings.StatusText}" />
+      </StackPanel>
+    </TabItem>
+    <TabItem Header="模板目录">
+      <DockPanel Margin="12">
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+          <Button Content="刷新目录" Command="{Binding Catalog.RefreshCommand}" Margin="0,0,8,0" />
+          <Button Content="打开模板" Click="OnOpenTemplate" Margin="0,0,8,0" />
+          <Button Content="删除模板" Click="OnDeleteTemplate" />
+        </StackPanel>
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding Catalog.StatusText}" Margin="0,8,0,0" />
+        <DataGrid x:Name="TemplateCatalogGrid"
+                  ItemsSource="{Binding Catalog.Entries}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  MouseDoubleClick="OnTemplateDoubleClick"
+                  AutomationProperties.Name="{DynamicResource TemplateCatalogGrid}">
+          <DataGrid.Columns>
+            <DataGridTextColumn Header="标题" Binding="{Binding Title}" />
+            <DataGridTextColumn Header="状态" Binding="{Binding Status}" />
+            <DataGridTextColumn Header="路径" Binding="{Binding Path}" Width="*" />
+          </DataGrid.Columns>
+        </DataGrid>
+      </DockPanel>
+    </TabItem>
   </TabControl>
 </Window>

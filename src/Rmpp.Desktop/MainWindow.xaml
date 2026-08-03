@@ -10,6 +10,11 @@
     <Menu DockPanel.Dock="Top">
       <MenuItem Header="{DynamicResource FileMenu}">
         <MenuItem Header="{DynamicResource NewTemplate}" Command="{Binding NewDocumentCommand}" InputGestureText="Ctrl+N" />
+        <MenuItem Header="{DynamicResource OpenTemplate}" Click="OnOpenTemplate" InputGestureText="Ctrl+O" />
+        <MenuItem Header="{DynamicResource SaveTemplate}" Click="OnSaveTemplate" InputGestureText="Ctrl+S" />
+        <MenuItem Header="{DynamicResource SaveTemplateAs}" Click="OnSaveTemplateAs" InputGestureText="Ctrl+Shift+S" />
+        <Separator />
+        <MenuItem Header="{DynamicResource DeleteTemplate}" Click="OnDeleteTemplate" />
         <MenuItem Header="{DynamicResource CloseTemplate}" Command="{Binding CloseActiveDocumentCommand}" />
       </MenuItem>
       <MenuItem Header="{DynamicResource EditMenu}">

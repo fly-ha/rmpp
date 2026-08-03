@@ -2,42 +2,147 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore">
+  <UserControl.Resources>
+    <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+  </UserControl.Resources>
   <ScrollViewer VerticalScrollBarVisibility="Auto">
     <StackPanel Margin="10" DataContext="{Binding Properties}">
-      <TextBlock Text="{Binding TypeName}" FontWeight="Bold" FontSize="15" Margin="0,0,0,8" AutomationProperties.Name="{DynamicResource Properties}" />
-      <TextBlock Text="{DynamicResource Name}" /><TextBox Text="{Binding Name, UpdateSourceTrigger=LostFocus}" automation:AutomationProperties.Name="{DynamicResource ElementName}" />
-      <UniformGrid Columns="2" Margin="0,8,0,0">
-        <StackPanel><TextBlock Text="X (mm)"/><TextBox Text="{Binding X, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-        <StackPanel><TextBlock Text="Y (mm)"/><TextBox Text="{Binding Y, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-        <StackPanel><TextBlock Text="{DynamicResource WidthMm}"/><TextBox Text="{Binding Width, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-        <StackPanel><TextBlock Text="{DynamicResource HeightMm}"/><TextBox Text="{Binding Height, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-        <StackPanel><TextBlock Text="{DynamicResource RotationDegrees}"/><TextBox Text="{Binding Rotation, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-        <StackPanel><TextBlock Text="{DynamicResource Opacity}"/><TextBox Text="{Binding Opacity, UpdateSourceTrigger=LostFocus}" /></StackPanel>
-      </UniformGrid>
-      <WrapPanel Margin="0,8">
-        <CheckBox Content="{DynamicResource Visible}" IsChecked="{Binding IsVisible}" Margin="0,0,10,0" />
-        <CheckBox Content="{DynamicResource Printable}" IsChecked="{Binding IsPrintable}" Margin="0,0,10,0" />
-        <CheckBox Content="{DynamicResource Locked}" IsChecked="{Binding IsLocked}" />
-      </WrapPanel>
-      <TextBlock Text="{DynamicResource ContentExpressionFormat}" /><TextBox Text="{Binding Content, UpdateSourceTrigger=LostFocus}" AcceptsReturn="True" MinHeight="50" />
-      <TextBlock Text="{DynamicResource PointCoordinates}" Margin="0,8,0,0"/><TextBox Text="{Binding Points, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource FontFamily}" Margin="0,8,0,0"/><TextBox Text="{Binding FontFamily, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource FontSize}"/><TextBox Text="{Binding FontSize, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource StartAngle}" Margin="0,8,0,0"/><TextBox Text="{Binding StartAngle, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource SweepDegrees}"/><TextBox Text="{Binding SweepDegrees, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource CornerRadius}"/><TextBox Text="{Binding CornerRadius, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource SerialStart}" Margin="0,8,0,0"/><TextBox Text="{Binding SerialStart, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource SerialStep}"/><TextBox Text="{Binding SerialStep, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource BarcodeSymbology}" Margin="0,8,0,0"/><ComboBox ItemsSource="{Binding BarcodeSymbologies}" SelectedItem="{Binding Symbology}" />
-      <TextBlock Text="{DynamicResource ImageFit}" Margin="0,8,0,0"/><ComboBox ItemsSource="{Binding ImageFitModes}" SelectedItem="{Binding ImageFit}" />
-      <TextBlock Text="{DynamicResource ImageCrop}"/><TextBox Text="{Binding ImageCrop, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource StrokeWidthMm}" Margin="0,8,0,0"/><TextBox Text="{Binding StrokeWidth, UpdateSourceTrigger=LostFocus}" />
-      <TextBlock Text="{DynamicResource Fill}" Margin="0,8,0,0"/>
-      <ComboBox SelectedValue="{Binding FillMode}" SelectedValuePath="Tag">
-        <ComboBoxItem Content="{DynamicResource NoFill}" Tag="None"/><ComboBoxItem Content="{DynamicResource SolidFill}" Tag="Solid"/><ComboBoxItem Content="{DynamicResource HatchFill}" Tag="Hatch"/>
-      </ComboBox>
-      <TextBlock Text="{DynamicResource HatchPattern}" Margin="0,8,0,0"/><ComboBox ItemsSource="{Binding HatchPatterns}" SelectedItem="{Binding HatchPattern}" />
-      <TextBlock Text="{Binding ValidationSummary}" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,10,0,0" />
+      <TextBlock Text="{Binding TypeName}" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"
+                 AutomationProperties.Name="{DynamicResource Properties}" />
+
+      <GroupBox Header="{DynamicResource CommonProperties}"
+                Visibility="{Binding HasSelection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource Name}" />
+          <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged, Delay=150}"
+                   automation:AutomationProperties.Name="{DynamicResource ElementName}" />
+          <UniformGrid Columns="2" Margin="0,8,0,0">
+            <StackPanel><TextBlock Text="X (mm)"/><TextBox Text="{Binding X, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+            <StackPanel><TextBlock Text="Y (mm)"/><TextBox Text="{Binding Y, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+            <StackPanel><TextBlock Text="{DynamicResource WidthMm}"/><TextBox Text="{Binding Width, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+            <StackPanel><TextBlock Text="{DynamicResource HeightMm}"/><TextBox Text="{Binding Height, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+            <StackPanel><TextBlock Text="{DynamicResource RotationDegrees}"/><TextBox Text="{Binding Rotation, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+            <StackPanel><TextBlock Text="{DynamicResource Opacity}"/><TextBox Text="{Binding Opacity, UpdateSourceTrigger=PropertyChanged, Delay=150}" /></StackPanel>
+          </UniformGrid>
+          <WrapPanel Margin="0,8,0,0">
+            <CheckBox Content="{DynamicResource Visible}" IsChecked="{Binding IsVisible}" Margin="0,0,10,0" />
+            <CheckBox Content="{DynamicResource Printable}" IsChecked="{Binding IsPrintable}" Margin="0,0,10,0" />
+            <CheckBox Content="{DynamicResource Locked}" IsChecked="{Binding IsLocked}" />
+          </WrapPanel>
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="TextPropertiesGroup" Header="{DynamicResource TextProperties}"
+                Visibility="{Binding IsTextElement, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource TextContent}" />
+          <TextBox Text="{Binding Content, UpdateSourceTrigger=PropertyChanged, Delay=150}" AcceptsReturn="True" MinHeight="50" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="DateTimePropertiesGroup" Header="{DynamicResource DateTimeProperties}"
+                Visibility="{Binding IsDateTimeElement, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource DateTimeFormat}" />
+          <TextBox Text="{Binding DateTimeFormat, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="SerialPropertiesGroup" Header="{DynamicResource SerialProperties}"
+                Visibility="{Binding IsSerialElement, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource SerialPrefix}"/><TextBox Text="{Binding SerialPrefix, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource SerialSuffix}"/><TextBox Text="{Binding SerialSuffix, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource SerialStart}"/><TextBox Text="{Binding SerialStart, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource SerialStep}"/><TextBox Text="{Binding SerialStep, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource SerialMinimumDigits}"/><TextBox Text="{Binding SerialMinimumDigits, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="BarcodePropertiesGroup" Header="{DynamicResource BarcodeProperties}"
+                Visibility="{Binding IsBarcodeElement, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource BarcodeContent}" />
+          <TextBox Text="{Binding Content, UpdateSourceTrigger=PropertyChanged, Delay=150}" AcceptsReturn="True" MinHeight="45" />
+          <TextBlock Text="{DynamicResource BarcodeSymbology}" Margin="0,6,0,0" />
+          <ComboBox ItemsSource="{Binding BarcodeSymbologies}" SelectedItem="{Binding Symbology}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="ImagePropertiesGroup" Header="{DynamicResource ImageProperties}"
+                Visibility="{Binding IsImageElement, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource ImageFile}" />
+          <TextBlock Text="{Binding ImageDisplayName}" TextWrapping="Wrap" />
+          <WrapPanel Margin="0,6,0,0">
+            <Button Content="{DynamicResource SelectImage}" Click="OnSelectImage" Margin="0,0,8,0" />
+            <Button Content="{DynamicResource ClearImage}" Click="OnClearImage" IsEnabled="{Binding HasImageAsset}" />
+          </WrapPanel>
+          <TextBlock Text="{DynamicResource ImageFit}" Margin="0,6,0,0" />
+          <ComboBox ItemsSource="{Binding ImageFitModes}" SelectedItem="{Binding ImageFit}" />
+          <TextBlock Text="{DynamicResource ImageCrop}" />
+          <TextBox Text="{Binding ImageCrop, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{Binding DataContext.Designer.ImageStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                     TextWrapping="Wrap" Margin="0,6,0,0" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="PointPropertiesGroup" Header="{DynamicResource PointProperties}"
+                Visibility="{Binding SupportsPointEditing, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource PointCoordinates}" />
+          <TextBox Text="{Binding Points, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="ArcPropertiesGroup" Header="{DynamicResource ArcProperties}"
+                Visibility="{Binding SupportsArcEditing, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource StartAngle}"/><TextBox Text="{Binding StartAngle, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource SweepDegrees}"/><TextBox Text="{Binding SweepDegrees, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox x:Name="RectanglePropertiesGroup" Header="{DynamicResource RectangleProperties}"
+                Visibility="{Binding SupportsCornerRadius, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource CornerRadius}"/>
+          <TextBox Text="{Binding CornerRadius, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox Header="{DynamicResource FontProperties}"
+                Visibility="{Binding SupportsFont, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource FontFamily}"/><TextBox Text="{Binding FontFamily, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+          <TextBlock Text="{DynamicResource FontSize}"/><TextBox Text="{Binding FontSize, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox Header="{DynamicResource StrokeProperties}"
+                Visibility="{Binding SupportsStroke, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource StrokeWidthMm}" />
+          <TextBox Text="{Binding StrokeWidth, UpdateSourceTrigger=PropertyChanged, Delay=150}" />
+        </StackPanel>
+      </GroupBox>
+
+      <GroupBox Header="{DynamicResource FillProperties}"
+                Visibility="{Binding SupportsFill, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="0,0,0,8">
+        <StackPanel Margin="8">
+          <TextBlock Text="{DynamicResource Fill}" />
+          <ComboBox SelectedValue="{Binding FillMode}" SelectedValuePath="Tag">
+            <ComboBoxItem Content="{DynamicResource NoFill}" Tag="None" />
+            <ComboBoxItem Content="{DynamicResource SolidFill}" Tag="Solid" />
+            <ComboBoxItem Content="{DynamicResource HatchFill}" Tag="Hatch" />
+          </ComboBox>
+          <TextBlock Text="{DynamicResource HatchPattern}" Margin="0,6,0,0" />
+          <ComboBox ItemsSource="{Binding HatchPatterns}" SelectedItem="{Binding HatchPattern}" />
+        </StackPanel>
+      </GroupBox>
+
+      <TextBlock Text="{Binding ValidationSummary}" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,2,0,0" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

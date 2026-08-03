@@ -6,9 +6,11 @@ using Rmpp.Application.Data;
 using Rmpp.Application.Printing;
 using Rmpp.Application.Validation;
 using Rmpp.Domain.Documents;
+using Rmpp.Infrastructure.Pdf;
 using Rmpp.Printing.Windows.Printers;
 using Rmpp.Rendering.Layout;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
 
 namespace Rmpp.Desktop.ViewModels;
 
@@ -23,6 +25,7 @@ public sealed partial class PrintSetupViewModel : ObservableObject
     private readonly IRenderExporter? renderExporter;
     private TemplateDocument? document;
     private DataSetSnapshot? dataSet;
+    private IRenderAssetProvider? assetProvider;
 
     public PrintSetupViewModel(
         PrintJobPlanner? planner = null,
@@ -84,10 +87,16 @@ public sealed partial class PrintSetupViewModel : ObservableObject
     public PrintPreviewViewModel? Preview { get; private set; }
     public PdfExportViewModel? PdfExport { get; private set; }
 
-    public void Load(TemplateDocument template, DataSetSnapshot? sessionData)
+    public void Load(
+        TemplateDocument template,
+        DataSetSnapshot? sessionData,
+        IReadOnlyDictionary<Guid, ReadOnlyMemory<byte>>? assetContents = null)
     {
         document = template ?? throw new ArgumentNullException(nameof(template));
         dataSet = sessionData;
+        assetProvider = assetContents is { Count: > 0 }
+            ? new PackageRenderAssetProvider(template, assetContents)
+            : null;
         FirstRecord = 1;
         LastRecord = Math.Max(1, sessionData?.Count ?? 1);
         Plan = null;
@@ -150,10 +159,10 @@ public sealed partial class PrintSetupViewModel : ObservableObject
             ValidationIssues.Clear();
             foreach (ValidationIssue issue in validation.Issues) ValidationIssues.Add(issue);
             Plan = built;
-            Preview = new PrintPreviewViewModel(previewService);
+            Preview = new PrintPreviewViewModel(previewService, assetProvider: assetProvider);
             Preview.Load(built);
             PdfExport?.Dispose();
-            PdfExport = renderExporter is null ? null : new PdfExportViewModel(renderExporter, previewService);
+            PdfExport = renderExporter is null ? null : new PdfExportViewModel(renderExporter, previewService, assetProvider);
             PdfExport?.Load(built);
             OnPropertyChanged(nameof(Preview));
             OnPropertyChanged(nameof(PdfExport));

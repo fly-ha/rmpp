@@ -31,13 +31,22 @@ public sealed class LocalRenderExporter(SkiaPdfExporter? exporter = null) : IRen
             throw new ArgumentOutOfRangeException(nameof(options), "PDF 页码范围无效。");
         }
 
+        if (!double.IsFinite(options.ImageSourceDpi) || options.ImageSourceDpi <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "Image source DPI must be positive and finite.");
+        }
+
         RenderPage[] pages = scene.Pages.Skip(first - 1).Take(last - first + 1).ToArray();
         RenderScene selected = scene with
         {
             Pages = pages,
             Issues = pages.SelectMany(static page => page.Issues).ToArray(),
         };
-        exporter.Export(selected, destination);
+        exporter.Export(
+            selected,
+            destination,
+            options.AssetProvider,
+            new SkiaRenderOptions { ImageSourceDpi = options.ImageSourceDpi });
         cancellationToken.ThrowIfCancellationRequested();
         return Task.CompletedTask;
     }

@@ -1,8 +1,11 @@
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Rmpp.Desktop.Controls;
-using Rmpp.Desktop.ViewModels;
+using Microsoft.Win32;
 using Rmpp.Application.Editing.Snapping;
+using Rmpp.Desktop.Controls;
+using Rmpp.Desktop.Resources;
+using Rmpp.Desktop.ViewModels;
 using Rmpp.Domain.Documents;
 using Rmpp.Domain.Geometry;
 
@@ -10,6 +13,8 @@ namespace Rmpp.Desktop.Views;
 
 public partial class DesignerView : UserControl
 {
+    private System.Windows.Point? toolboxDragStart;
+
     public DesignerView()
     {
         InitializeComponent();
@@ -43,6 +48,63 @@ public partial class DesignerView : UserControl
             document.Designer.Select(e.ElementId, e.IsAdditive);
         }
     }
+
+    private void OnElementCreateRequested(object sender, ElementCreateRequestedEventArgs e)
+    {
+        if (DataContext is DocumentTabViewModel document)
+        {
+            document.Designer.CreateElement(e.Tool, e.Bounds);
+        }
+    }
+
+    private void OnToolboxMouseLeftButtonDown(object sender, MouseButtonEventArgs e) =>
+        toolboxDragStart = e.GetPosition(ToolboxList);
+
+    private void OnToolboxMouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton != MouseButtonState.Pressed
+            || toolboxDragStart is not { } start
+            || ToolboxList.SelectedItem is not DesignerToolItem item
+            || item.Tool == DesignerTool.Select)
+        {
+            return;
+        }
+
+        System.Windows.Point current = e.GetPosition(ToolboxList);
+        if (Math.Abs(current.X - start.X) < SystemParameters.MinimumHorizontalDragDistance
+            && Math.Abs(current.Y - start.Y) < SystemParameters.MinimumVerticalDragDistance)
+        {
+            return;
+        }
+
+        DataObject data = new();
+        data.SetData(DesignerSurface.DesignerToolDataFormat, item.Tool.ToString());
+        _ = DragDrop.DoDragDrop(ToolboxList, data, DragDropEffects.Copy);
+        toolboxDragStart = null;
+    }
+
+    private async void OnImportBackground(object sender, System.Windows.RoutedEventArgs e)
+    {
+        if (DataContext is not DocumentTabViewModel document)
+        {
+            return;
+        }
+
+        OpenFileDialog dialog = new()
+        {
+            Title = DesktopText.Get("ImportBackground"),
+            Filter = DesktopText.Get("BackgroundFileFilter"),
+            CheckFileExists = true,
+            Multiselect = false,
+        };
+        if (dialog.ShowDialog() == true)
+        {
+            await document.Designer.ImportBackgroundAsync(dialog.FileName);
+        }
+    }
+
+    private void OnDeleteBackground(object sender, System.Windows.RoutedEventArgs e) =>
+        WithDesigner(static designer => designer.DeleteActiveBackground());
 
     private void OnElementsMoved(object sender, ElementsMovedEventArgs e)
     {

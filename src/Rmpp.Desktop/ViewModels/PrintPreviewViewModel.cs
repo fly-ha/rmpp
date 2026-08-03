@@ -1,13 +1,13 @@
+using System.IO;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.IO;
 using Rmpp.Application.Printing;
 using Rmpp.Rendering.Layout;
 using Rmpp.Rendering.Scene;
 using Rmpp.Rendering.Skia;
 using SkiaSharp;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace Rmpp.Desktop.ViewModels;
 
@@ -16,12 +16,17 @@ public sealed partial class PrintPreviewViewModel : ObservableObject
 {
     private readonly PrintPreviewService previewService;
     private readonly SkiaBitmapRenderer bitmapRenderer;
+    private readonly IRenderAssetProvider? assetProvider;
     private PrintJobPlan? plan;
 
-    public PrintPreviewViewModel(PrintPreviewService? previewService = null, SkiaBitmapRenderer? bitmapRenderer = null)
+    public PrintPreviewViewModel(
+        PrintPreviewService? previewService = null,
+        SkiaBitmapRenderer? bitmapRenderer = null,
+        IRenderAssetProvider? assetProvider = null)
     {
         this.previewService = previewService ?? new PrintPreviewService();
         this.bitmapRenderer = bitmapRenderer ?? new SkiaBitmapRenderer();
+        this.assetProvider = assetProvider;
         PreviousPageCommand = new AsyncRelayCommand(PreviousPageAsync, () => PageIndex > 0);
         NextPageCommand = new AsyncRelayCommand(NextPageAsync, () => plan is not null && PageIndex < plan.Pages.Count - 1);
     }
@@ -53,7 +58,7 @@ public sealed partial class PrintPreviewViewModel : ObservableObject
     {
         if (plan is null || plan.Pages.Count == 0) return;
         Scene = await previewService.GetPageAsync(plan, PageIndex, RenderTarget.Preview, cancellationToken).ConfigureAwait(true);
-        using SKBitmap bitmap = bitmapRenderer.Render(Scene.Pages[0], 96);
+        using SKBitmap bitmap = bitmapRenderer.Render(Scene.Pages[0], 96, assetProvider);
         using SKImage image = SKImage.FromBitmap(bitmap);
         using SKData data = image.Encode(SKEncodedImageFormat.Png, 90);
         using MemoryStream stream = new(data.ToArray());

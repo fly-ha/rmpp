@@ -1,10 +1,11 @@
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.IO;
 using Rmpp.Application.Abstractions;
 using Rmpp.Application.Printing;
 using Rmpp.Rendering.Layout;
 using Rmpp.Rendering.Scene;
+using Rmpp.Rendering.Skia;
 
 namespace Rmpp.Desktop.ViewModels;
 
@@ -13,13 +14,18 @@ public sealed partial class PdfExportViewModel : ObservableObject, IDisposable
 {
     private readonly IRenderExporter exporter;
     private readonly PrintPreviewService previewService;
+    private readonly IRenderAssetProvider? assetProvider;
     private CancellationTokenSource? cancellation;
     private PrintJobPlan? plan;
 
-    public PdfExportViewModel(IRenderExporter exporter, PrintPreviewService? previewService = null)
+    public PdfExportViewModel(
+        IRenderExporter exporter,
+        PrintPreviewService? previewService = null,
+        IRenderAssetProvider? assetProvider = null)
     {
         this.exporter = exporter ?? throw new ArgumentNullException(nameof(exporter));
         this.previewService = previewService ?? new PrintPreviewService();
+        this.assetProvider = assetProvider;
         ExportCommand = new AsyncRelayCommand(ExportAsync, () => plan is not null && !IsBusy && !string.IsNullOrWhiteSpace(OutputPath));
         CancelCommand = new RelayCommand(() => cancellation?.Cancel(), () => IsBusy);
     }
@@ -96,6 +102,8 @@ public sealed partial class PdfExportViewModel : ObservableObject, IDisposable
             {
                 FirstPage = FirstPage,
                 LastPage = LastPage,
+                AssetProvider = assetProvider,
+                ImageSourceDpi = 300,
             }, cancellation.Token).ConfigureAwait(true);
             StatusText = $"PDF 已保存：{OutputPath}";
         }

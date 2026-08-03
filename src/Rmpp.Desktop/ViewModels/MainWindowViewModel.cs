@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Rmpp.Domain.Documents;
-using Rmpp.Desktop.Resources;
 using Rmpp.Application.Abstractions;
 using Rmpp.Application.Data;
 using Rmpp.Application.Printing;
+using Rmpp.Desktop.Resources;
 using Rmpp.Desktop.Services;
+using Rmpp.Domain.Documents;
 using Rmpp.Infrastructure.Persistence;
 using Rmpp.Infrastructure.Templates;
 using Rmpp.Printing.Windows.Printers;
@@ -128,7 +128,10 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         if (ActiveDocument is null) return;
         PrintSetupViewModel viewModel = new(printJobPlanner, printJobValidator, printPreviewService, printerCatalog, printerService, renderExporter);
-        viewModel.Load(ActiveDocument.Session.State.Document, ActiveDocument.DataSet);
+        viewModel.Load(
+            ActiveDocument.Session.State.Document,
+            ActiveDocument.DataSet,
+            ActiveDocument.Session.State.AssetContents);
         PrintSetupRequested?.Invoke(this, viewModel);
     }
 

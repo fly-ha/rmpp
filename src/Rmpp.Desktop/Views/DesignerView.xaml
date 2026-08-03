@@ -8,25 +8,69 @@
              KeyboardNavigation.TabNavigation="Contained">
   <Grid>
     <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="170" />
+      <ColumnDefinition Width="220" />
       <ColumnDefinition Width="*" />
       <ColumnDefinition Width="280" />
     </Grid.ColumnDefinitions>
 
     <Border Grid.Column="0" BorderBrush="#D0D0D0" BorderThickness="0,0,1,0" Padding="10">
-      <StackPanel>
+      <Grid>
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
         <TextBlock Text="{DynamicResource Toolbox}" FontWeight="Bold" Margin="0,0,0,8" />
-        <TextBlock Text="{DynamicResource ToolTextDateSerial}" TextWrapping="Wrap" Margin="0,4" />
-        <TextBlock Text="{DynamicResource ToolImageBarcode}" TextWrapping="Wrap" Margin="0,4" />
-        <TextBlock Text="{DynamicResource ToolBasicShapes}" TextWrapping="Wrap" Margin="0,4" />
-        <TextBlock Text="{DynamicResource ToolPaths}" TextWrapping="Wrap" Margin="0,4" />
-        <Separator Margin="0,10" />
-        <TextBlock Text="{DynamicResource Zoom}" />
-        <Slider x:Name="ZoomSlider"
-                Minimum="0.1" Maximum="4" Value="{Binding Designer.Zoom}" TickFrequency="0.1"
-                KeyboardNavigation.TabIndex="0"
-                AutomationProperties.Name="{DynamicResource DesignerZoom}" />
-      </StackPanel>
+        <ListBox x:Name="ToolboxList"
+                 Grid.Row="1"
+                 ItemsSource="{Binding Designer.Tools}"
+                 SelectedValue="{Binding Designer.ActiveTool, Mode=TwoWay}"
+                 SelectedValuePath="Tool"
+                 PreviewMouseLeftButtonDown="OnToolboxMouseLeftButtonDown"
+                 PreviewMouseMove="OnToolboxMouseMove"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 AutomationProperties.Name="{DynamicResource Toolbox}">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock Text="{Binding DisplayName}" Padding="6,3" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Grid.Row="2" Margin="0,10,0,0">
+          <Separator Margin="0,0,0,8" />
+          <TextBlock Text="{DynamicResource Background}" FontWeight="Bold" />
+          <Button Content="{DynamicResource ImportBackground}" Click="OnImportBackground" Margin="0,6,0,4" />
+          <CheckBox Content="{DynamicResource BackgroundVisible}"
+                    IsChecked="{Binding Designer.ActiveBackgroundVisible}"
+                    IsEnabled="{Binding Designer.HasBackground}" />
+          <CheckBox Content="{DynamicResource BackgroundPrintable}"
+                    IsChecked="{Binding Designer.ActiveBackgroundPrintable}"
+                    IsEnabled="{Binding Designer.HasBackground}" />
+          <CheckBox Content="{DynamicResource BackgroundLocked}"
+                    IsChecked="{Binding Designer.ActiveBackgroundLocked}"
+                    IsEnabled="{Binding Designer.HasBackground}" />
+          <TextBlock Text="{DynamicResource BackgroundFit}" Margin="0,4,0,0" />
+          <ComboBox ItemsSource="{Binding Designer.BackgroundFitModes}"
+                    SelectedItem="{Binding Designer.ActiveBackgroundFitMode}"
+                    IsEnabled="{Binding Designer.HasBackground}" />
+          <TextBlock Text="{DynamicResource BackgroundOpacity}" Margin="0,4,0,0" />
+          <Slider Minimum="0" Maximum="1" TickFrequency="0.05"
+                  Value="{Binding Designer.ActiveBackgroundOpacity}"
+                  IsEnabled="{Binding Designer.HasBackground}" />
+          <TextBlock Text="{DynamicResource BackgroundPdfPage}" Margin="0,4,0,0" />
+          <TextBox Text="{Binding Designer.ActiveBackgroundPdfPageNumber, UpdateSourceTrigger=LostFocus}"
+                   IsEnabled="{Binding Designer.HasBackground}" />
+          <Button Content="{DynamicResource DeleteBackground}" Click="OnDeleteBackground"
+                  IsEnabled="{Binding Designer.HasBackground}" Margin="0,6,0,0" />
+          <TextBlock Text="{Binding Designer.BackgroundStatus}" TextWrapping="Wrap" Margin="0,4,0,0" />
+          <Separator Margin="0,8" />
+          <TextBlock Text="{DynamicResource Zoom}" />
+          <Slider x:Name="ZoomSlider"
+                  Minimum="0.1" Maximum="4" Value="{Binding Designer.Zoom}" TickFrequency="0.1"
+                  KeyboardNavigation.TabIndex="0"
+                  AutomationProperties.Name="{DynamicResource DesignerZoom}" />
+        </StackPanel>
+      </Grid>
     </Border>
 
     <Grid Grid.Column="1" Background="{DynamicResource {x:Static sys:SystemColors.ControlBrushKey}}">
@@ -52,11 +96,14 @@
                                   KeyboardNavigation.TabIndex="1"
                                   AutomationProperties.Name="{DynamicResource DesignerCanvas}"
                                   Document="{Binding Designer.Document}"
+                                  AssetContents="{Binding Designer.AssetContents}"
                                   SelectedElementIds="{Binding Designer.SelectedElementIds}"
+                                  ActiveTool="{Binding Designer.ActiveTool}"
                                   Zoom="{Binding Designer.Zoom}"
                                   ShowGrid="{Binding Designer.ShowGrid}"
                                   GridSpacingMm="{Binding Designer.GridSpacingMm}"
                                   ElementSelected="OnElementSelected"
+                                  ElementCreateRequested="OnElementCreateRequested"
                                   ElementsMoved="OnElementsMoved"
                                   ElementResized="OnElementResized" />
       </ScrollViewer>

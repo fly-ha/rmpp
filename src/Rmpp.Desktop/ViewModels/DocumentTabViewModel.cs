@@ -1,11 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Rmpp.Application.Documents;
 using Rmpp.Application.Data;
+using Rmpp.Application.Documents;
 using Rmpp.Application.Editing;
 using Rmpp.Application.Editing.Commands;
-using Rmpp.Domain.Documents;
 using Rmpp.Desktop.Resources;
+using Rmpp.Domain.Documents;
 using Rmpp.Infrastructure.Templates;
 
 namespace Rmpp.Desktop.ViewModels;
@@ -18,7 +18,10 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         IReadOnlyDictionary<Guid, byte[]>? assets = null,
         string? originalTemplatePath = null)
     {
-        Session = new DocumentSession(document);
+        IReadOnlyDictionary<Guid, ReadOnlyMemory<byte>> sessionAssets = assets is null
+            ? new Dictionary<Guid, ReadOnlyMemory<byte>>()
+            : assets.ToDictionary(static pair => pair.Key, static pair => (ReadOnlyMemory<byte>)pair.Value);
+        Session = new DocumentSession(document, originalTemplatePath, sessionAssets);
         Dispatcher = new EditorCommandDispatcher(Session);
         Designer = new DesignerViewModel(Session, Dispatcher);
         Properties = new PropertiesViewModel(Session, Dispatcher);
@@ -31,7 +34,6 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
         DeleteCommand = new RelayCommand(DeleteSelection, () => Session.State.SelectedElementIds.Count > 0);
         DuplicateCommand = new RelayCommand(Designer.DuplicateSelection, () => Session.State.SelectedElementIds.Count > 0);
         Session.Changed += OnSessionChanged;
-        Assets = assets ?? new Dictionary<Guid, byte[]>();
         OriginalTemplatePath = originalTemplatePath;
     }
 
@@ -44,7 +46,11 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
     public DataPreviewViewModel DataPreview { get; }
     public ExpressionEditorViewModel ExpressionEditor { get; }
     public DataSetSnapshot? DataSet { get; private set; }
-    public IReadOnlyDictionary<Guid, byte[]> Assets { get; }
+    public IReadOnlyDictionary<Guid, byte[]> Assets => Session.State.Document.Assets
+        .Where(asset => Session.State.AssetContents.ContainsKey(asset.Id))
+        .ToDictionary(
+            static asset => asset.Id,
+            asset => Session.State.AssetContents[asset.Id].ToArray());
     public string? OriginalTemplatePath { get; }
     public IRelayCommand UndoCommand { get; }
     public IRelayCommand RedoCommand { get; }
@@ -53,11 +59,16 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
     public string DisplayTitle => Session.State.Document.Metadata.Title;
     public bool IsDirty => Session.State.IsDirty;
 
-    public TemplatePackageContent CreateRecoveryContent() => new()
+    public TemplatePackageContent CreateRecoveryContent()
     {
-        Document = Session.State.Document,
-        Assets = Assets,
-    };
+        TemplateDocument document = Session.State.Document;
+        Dictionary<Guid, byte[]> assets = document.Assets.ToDictionary(
+            static asset => asset.Id,
+            asset => Session.State.AssetContents.TryGetValue(asset.Id, out ReadOnlyMemory<byte> content)
+                ? content.ToArray()
+                : throw new InvalidOperationException($"Missing asset content: {asset.FileName}"));
+        return new TemplatePackageContent { Document = document, Assets = assets };
+    }
 
     /// <summary>把导入数据附加到当前标签页的内存会话，不写入文档或恢复状态。</summary>
     public void AttachDataSet(DataSetSnapshot dataSet)
@@ -96,6 +107,7 @@ public sealed class DocumentTabViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(DisplayTitle));
         OnPropertyChanged(nameof(IsDirty));
+        OnPropertyChanged(nameof(Assets));
         UndoCommand.NotifyCanExecuteChanged();
         RedoCommand.NotifyCanExecuteChanged();
         DeleteCommand.NotifyCanExecuteChanged();

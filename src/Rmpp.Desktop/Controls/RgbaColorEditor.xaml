@@ -3,56 +3,229 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="False">
   <UserControl.Resources>
+    <DrawingBrush x:Key="CheckerboardBrush" TileMode="Tile"
+                  Viewbox="0,0,12,12" ViewboxUnits="Absolute"
+                  Viewport="0,0,12,12" ViewportUnits="Absolute">
+      <DrawingBrush.Drawing>
+        <DrawingGroup>
+          <GeometryDrawing Brush="#FFFFFFFF">
+            <GeometryDrawing.Geometry>
+              <RectangleGeometry Rect="0,0,12,12" />
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+          <GeometryDrawing Brush="#FFD0D0D0">
+            <GeometryDrawing.Geometry>
+              <GeometryGroup>
+                <RectangleGeometry Rect="0,0,6,6" />
+                <RectangleGeometry Rect="6,6,6,6" />
+              </GeometryGroup>
+            </GeometryDrawing.Geometry>
+          </GeometryDrawing>
+        </DrawingGroup>
+      </DrawingBrush.Drawing>
+    </DrawingBrush>
     <Style x:Key="PaletteButtonStyle" TargetType="Button">
       <Setter Property="Width" Value="24" />
       <Setter Property="Height" Value="24" />
       <Setter Property="Margin" Value="2" />
       <Setter Property="BorderBrush" Value="#808080" />
       <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Focusable" Value="True" />
       <EventSetter Event="Click" Handler="OnPaletteColorClick" />
     </Style>
+    <Style x:Key="ChannelTextBoxStyle" TargetType="TextBox">
+      <Setter Property="Width" Value="50" />
+      <Setter Property="Margin" Value="3,0,8,0" />
+      <Setter Property="Padding" Value="3,2" />
+      <Setter Property="HorizontalContentAlignment" Value="Right" />
+      <EventSetter Event="TextChanged" Handler="OnChannelTextChanged" />
+      <EventSetter Event="LostKeyboardFocus" Handler="OnInputLostFocus" />
+      <EventSetter Event="KeyDown" Handler="OnInputKeyDown" />
+    </Style>
   </UserControl.Resources>
+
   <DockPanel LastChildFill="True">
-    <Border x:Name="ColorPreview" DockPanel.Dock="Left" Width="28" Margin="0,0,5,0"
+    <Border x:Name="ColorPreview" DockPanel.Dock="Left" Width="30" Margin="0,0,5,0"
+            Background="{StaticResource CheckerboardBrush}"
             BorderBrush="#808080" BorderThickness="1" CornerRadius="2"
-            AutomationProperties.Name="颜色预览" />
-    <ToggleButton x:Name="PaletteButton" DockPanel.Dock="Right" Content="调色板" Margin="5,0,0,0"
-                  Padding="8,2" AutomationProperties.Name="打开颜色调色板" />
-    <TextBox x:Name="ColorTextBox" MinWidth="108" TextChanged="OnColorTextChanged"
-             LostKeyboardFocus="OnColorTextLostFocus" KeyDown="OnColorTextKeyDown"
+            AutomationProperties.Name="颜色预览">
+      <Border x:Name="ColorPreviewFill" CornerRadius="1" />
+    </Border>
+    <ToggleButton x:Name="PaletteButton" DockPanel.Dock="Right" Content="调色"
+                  Margin="5,0,0,0" Padding="8,2"
+                  AutomationProperties.Name="打开高级调色器" />
+    <TextBox x:Name="ColorTextBox" MinWidth="108" Padding="3,2"
+             TextChanged="OnColorTextChanged"
+             LostKeyboardFocus="OnInputLostFocus" KeyDown="OnInputKeyDown"
              AutomationProperties.Name="颜色十六进制值" />
+
     <Popup x:Name="PalettePopup" PlacementTarget="{Binding ElementName=PaletteButton}"
            Placement="Bottom" StaysOpen="False" AllowsTransparency="True"
-           IsOpen="{Binding IsChecked, ElementName=PaletteButton, Mode=TwoWay}">
-      <Border Background="White" BorderBrush="#808080" BorderThickness="1" Padding="8" CornerRadius="3">
-        <StackPanel>
-          <TextBlock Text="选择颜色" FontWeight="SemiBold" Margin="2,0,2,4" />
-          <UniformGrid Columns="8">
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#000000" Background="#000000" ToolTip="#000000" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#404040" Background="#404040" ToolTip="#404040" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#808080" Background="#808080" ToolTip="#808080" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#C0C0C0" Background="#C0C0C0" ToolTip="#C0C0C0" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFFFF" Background="#FFFFFF" ToolTip="#FFFFFF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF0000" Background="#FF0000" ToolTip="#FF0000" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF8000" Background="#FF8000" ToolTip="#FF8000" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFF00" Background="#FFFF00" ToolTip="#FFFF00" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#80FF00" Background="#80FF00" ToolTip="#80FF00" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00A000" Background="#00A000" ToolTip="#00A000" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00FFFF" Background="#00FFFF" ToolTip="#00FFFF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0080FF" Background="#0080FF" ToolTip="#0080FF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0000FF" Background="#0000FF" ToolTip="#0000FF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#8000FF" Background="#8000FF" ToolTip="#8000FF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF00FF" Background="#FF00FF" ToolTip="#FF00FF" />
-            <Button Style="{StaticResource PaletteButtonStyle}" Tag="#A0522D" Background="#A0522D" ToolTip="#A0522D" />
-          </UniformGrid>
-          <DockPanel Margin="2,6,2,0">
-            <TextBlock x:Name="AlphaText" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="8,0,0,0" />
-            <TextBlock Text="透明度" VerticalAlignment="Center" Margin="0,0,8,0" />
-            <Slider x:Name="AlphaSlider" Minimum="0" Maximum="255" TickFrequency="1"
-                    ValueChanged="OnAlphaChanged" AutomationProperties.Name="颜色透明度" />
-          </DockPanel>
-          <TextBlock Text="也可在外部输入框手输 #RRGGBB 或 #AARRGGBB。" Foreground="DimGray" Margin="2,5,2,0" />
-        </StackPanel>
+           IsOpen="{Binding IsChecked, ElementName=PaletteButton, Mode=TwoWay}"
+           Opened="OnPaletteOpened" Closed="OnPaletteClosed"
+           PreviewKeyDown="OnPopupPreviewKeyDown">
+      <Border Width="366" Background="White" BorderBrush="#707070"
+              BorderThickness="1" Padding="10" CornerRadius="4">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" MaxHeight="680">
+          <StackPanel>
+            <DockPanel Margin="0,0,0,7">
+              <TextBlock x:Name="HueText" DockPanel.Dock="Right" Foreground="DimGray" />
+              <TextBlock Text="高级调色器" FontWeight="SemiBold" FontSize="14" />
+            </DockPanel>
+
+            <Grid x:Name="SaturationValuePanel" Height="182" ClipToBounds="True">
+              <Border x:Name="SaturationValueHueLayer" Background="Red" />
+              <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                  <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                    <GradientStop Color="White" Offset="0" />
+                    <GradientStop Color="#00FFFFFF" Offset="1" />
+                  </LinearGradientBrush>
+                </Rectangle.Fill>
+              </Rectangle>
+              <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                  <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#00000000" Offset="0" />
+                    <GradientStop Color="Black" Offset="1" />
+                  </LinearGradientBrush>
+                </Rectangle.Fill>
+              </Rectangle>
+              <Canvas x:Name="SaturationValueInput" Background="Transparent" Cursor="Cross"
+                      Focusable="True" AutomationProperties.Name="饱和度和明度"
+                      MouseLeftButtonDown="OnPickerMouseLeftButtonDown"
+                      MouseMove="OnPickerMouseMove"
+                      MouseLeftButtonUp="OnPickerMouseLeftButtonUp"
+                      LostMouseCapture="OnPickerLostMouseCapture"
+                      KeyDown="OnPickerKeyDown" SizeChanged="OnPickerSizeChanged">
+                <Ellipse x:Name="SaturationValueIndicator" Width="14" Height="14"
+                         Fill="#20000000" Stroke="White" StrokeThickness="2"
+                         IsHitTestVisible="False" />
+              </Canvas>
+            </Grid>
+
+            <TextBlock Text="色相" Margin="0,8,0,3" />
+            <Grid Height="20" ClipToBounds="True">
+              <Rectangle>
+                <Rectangle.Fill>
+                  <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                    <GradientStop Color="#FFFF0000" Offset="0" />
+                    <GradientStop Color="#FFFFFF00" Offset="0.1667" />
+                    <GradientStop Color="#FF00FF00" Offset="0.3333" />
+                    <GradientStop Color="#FF00FFFF" Offset="0.5" />
+                    <GradientStop Color="#FF0000FF" Offset="0.6667" />
+                    <GradientStop Color="#FFFF00FF" Offset="0.8333" />
+                    <GradientStop Color="#FFFF0000" Offset="1" />
+                  </LinearGradientBrush>
+                </Rectangle.Fill>
+              </Rectangle>
+              <Canvas x:Name="HueInput" Background="Transparent" Cursor="Hand"
+                      Focusable="True" AutomationProperties.Name="色相"
+                      MouseLeftButtonDown="OnPickerMouseLeftButtonDown"
+                      MouseMove="OnPickerMouseMove"
+                      MouseLeftButtonUp="OnPickerMouseLeftButtonUp"
+                      LostMouseCapture="OnPickerLostMouseCapture"
+                      KeyDown="OnPickerKeyDown" SizeChanged="OnPickerSizeChanged">
+                <Border x:Name="HueIndicator" Width="5" Height="20"
+                        BorderBrush="White" BorderThickness="2" Background="#30000000"
+                        IsHitTestVisible="False" />
+              </Canvas>
+            </Grid>
+
+            <DockPanel Margin="0,8,0,3">
+              <TextBlock x:Name="AlphaText" DockPanel.Dock="Right" Foreground="DimGray" />
+              <TextBlock Text="透明度" />
+            </DockPanel>
+            <Grid Height="20" Background="{StaticResource CheckerboardBrush}" ClipToBounds="True">
+              <Border x:Name="AlphaColorLayer" />
+              <Canvas x:Name="AlphaInput" Background="Transparent" Cursor="Hand"
+                      Focusable="True" AutomationProperties.Name="透明度"
+                      MouseLeftButtonDown="OnPickerMouseLeftButtonDown"
+                      MouseMove="OnPickerMouseMove"
+                      MouseLeftButtonUp="OnPickerMouseLeftButtonUp"
+                      LostMouseCapture="OnPickerLostMouseCapture"
+                      KeyDown="OnPickerKeyDown" SizeChanged="OnPickerSizeChanged">
+                <Border x:Name="AlphaIndicator" Width="5" Height="20"
+                        BorderBrush="Black" BorderThickness="1" Background="White"
+                        IsHitTestVisible="False" />
+              </Canvas>
+            </Grid>
+
+            <Grid Margin="0,10,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="Hex" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <TextBox x:Name="HexTextBox" Grid.Column="1" Padding="3,2"
+                       TextChanged="OnColorTextChanged"
+                       LostKeyboardFocus="OnInputLostFocus" KeyDown="OnInputKeyDown"
+                       AutomationProperties.Name="十六进制颜色" />
+            </Grid>
+
+            <WrapPanel Margin="0,8,0,0" VerticalAlignment="Center">
+              <TextBlock Text="R" VerticalAlignment="Center" />
+              <TextBox x:Name="RedTextBox" Style="{StaticResource ChannelTextBoxStyle}"
+                       AutomationProperties.Name="红色通道" />
+              <TextBlock Text="G" VerticalAlignment="Center" />
+              <TextBox x:Name="GreenTextBox" Style="{StaticResource ChannelTextBoxStyle}"
+                       AutomationProperties.Name="绿色通道" />
+              <TextBlock Text="B" VerticalAlignment="Center" />
+              <TextBox x:Name="BlueTextBox" Style="{StaticResource ChannelTextBoxStyle}"
+                       AutomationProperties.Name="蓝色通道" />
+              <TextBlock Text="A" VerticalAlignment="Center" />
+              <TextBox x:Name="AlphaTextBox" Style="{StaticResource ChannelTextBoxStyle}" Margin="3,0,0,0"
+                       AutomationProperties.Name="透明度通道" />
+            </WrapPanel>
+
+            <Grid Margin="0,10,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <StackPanel Grid.Column="0" Margin="0,0,5,0">
+                <TextBlock Text="原始颜色" Margin="0,0,0,3" />
+                <Border Height="32" Background="{StaticResource CheckerboardBrush}"
+                        BorderBrush="#808080" BorderThickness="1">
+                  <Border x:Name="OriginalColorFill" />
+                </Border>
+                <TextBlock x:Name="OriginalColorText" FontSize="11" Foreground="DimGray"
+                           HorizontalAlignment="Center" Margin="0,2,0,0" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                <TextBlock Text="当前颜色" Margin="0,0,0,3" />
+                <Border Height="32" Background="{StaticResource CheckerboardBrush}"
+                        BorderBrush="#808080" BorderThickness="1">
+                  <Border x:Name="CurrentColorFill" />
+                </Border>
+                <TextBlock x:Name="CurrentColorText" FontSize="11" Foreground="DimGray"
+                           HorizontalAlignment="Center" Margin="0,2,0,0" />
+              </StackPanel>
+            </Grid>
+
+            <TextBlock Text="常用颜色" Margin="0,10,0,3" />
+            <UniformGrid Columns="8">
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#000000" Background="#000000" ToolTip="#000000" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#404040" Background="#404040" ToolTip="#404040" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#808080" Background="#808080" ToolTip="#808080" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#C0C0C0" Background="#C0C0C0" ToolTip="#C0C0C0" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFFFF" Background="#FFFFFF" ToolTip="#FFFFFF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF0000" Background="#FF0000" ToolTip="#FF0000" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF8000" Background="#FF8000" ToolTip="#FF8000" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FFFF00" Background="#FFFF00" ToolTip="#FFFF00" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#80FF00" Background="#80FF00" ToolTip="#80FF00" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00A000" Background="#00A000" ToolTip="#00A000" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#00FFFF" Background="#00FFFF" ToolTip="#00FFFF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0080FF" Background="#0080FF" ToolTip="#0080FF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#0000FF" Background="#0000FF" ToolTip="#0000FF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#8000FF" Background="#8000FF" ToolTip="#8000FF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#FF00FF" Background="#FF00FF" ToolTip="#FF00FF" />
+              <Button Style="{StaticResource PaletteButtonStyle}" Tag="#A0522D" Background="#A0522D" ToolTip="#A0522D" />
+            </UniformGrid>
+            <TextBlock Text="拖动和完整合法数值会立即更新画布；Esc 恢复打开时的颜色。"
+                       Foreground="DimGray" FontSize="11" Margin="0,6,0,0" />
+          </StackPanel>
+        </ScrollViewer>
       </Border>
     </Popup>
   </DockPanel>

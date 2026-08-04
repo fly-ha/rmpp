@@ -34,4 +34,28 @@ internal static class RgbaColorText
         color = default;
         return false;
     }
+
+    /// <summary>仅在四个通道均为完整的 0 至 255 十进制整数时生成颜色，输入中间态不会被截断或钳制。</summary>
+    public static bool TryParseChannels(
+        string? redText,
+        string? greenText,
+        string? blueText,
+        string? alphaText,
+        out RgbaColor color)
+    {
+        if (TryParseChannel(redText, out byte red)
+            && TryParseChannel(greenText, out byte green)
+            && TryParseChannel(blueText, out byte blue)
+            && TryParseChannel(alphaText, out byte alpha))
+        {
+            color = new RgbaColor(red, green, blue, alpha);
+            return true;
+        }
+
+        color = default;
+        return false;
+    }
+
+    private static bool TryParseChannel(string? value, out byte channel) =>
+        byte.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out channel);
 }

@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Rmpp.Desktop.Controls;
+using Rmpp.Desktop.ViewModels;
 using Rmpp.Desktop.Views;
 using Rmpp.Domain.Documents;
 using Xunit;
@@ -124,6 +125,11 @@ public sealed class DesktopAccessibilityTests
         application.InitializeComponent();
         Assert.NotNull(application.Resources["PrimaryBrush"]);
         Assert.NotNull(application.Resources["MaterialDesignRaisedButton"]);
+
+        // 真实主窗口构造可防止主题隐式样式形成递归而只留下后台进程。
+        MainWindow window = new(new MainWindowViewModel());
+        Assert.Equal("RMPP 红枫叶定位打印", window.Title);
+        window.Close();
 
         TextBlock chinese = new()
         {

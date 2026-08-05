@@ -17,7 +17,11 @@ namespace Rmpp.Desktop.Composition;
 /// <summary>桌面应用的本地组合根；只注册文件、数据库、渲染和打印服务，不注册网络客户端。</summary>
 public static class AppHost
 {
-    public static ServiceProvider BuildServices()
+    /// <summary>
+    /// 异步构建桌面组合根并完成本地数据库迁移。
+    /// 启动调用方不得在 WPF UI 线程同步等待此方法，避免 SQLite 异步续延回到被阻塞的 Dispatcher。
+    /// </summary>
+    public static async Task<ServiceProvider> BuildServicesAsync(CancellationToken cancellationToken = default)
     {
         ServiceCollection services = new();
         services.AddSingleton(AppStoragePaths.Detect());
@@ -63,8 +67,22 @@ public static class AppHost
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
         ServiceProvider provider = services.BuildServiceProvider(validateScopes: true);
-        provider.GetRequiredService<SqliteAppDatabase>().InitializeAsync().GetAwaiter().GetResult();
-        return provider;
+        try
+        {
+            await provider.GetRequiredService<SqliteAppDatabase>().InitializeAsync(cancellationToken).ConfigureAwait(false);
+            return provider;
+        }
+        catch
+        {
+            provider.Dispose();
+            throw;
+        }
+    }
+
+    /// <summary>兼容同步调用方；WPF 启动路径必须改用 <see cref="BuildServicesAsync"/>。</summary>
+    public static ServiceProvider BuildServices()
+    {
+        return Task.Run(() => BuildServicesAsync()).GetAwaiter().GetResult();
     }
 }
 

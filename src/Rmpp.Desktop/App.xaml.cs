@@ -12,7 +12,7 @@ public partial class App : System.Windows.Application
 {
     private ServiceProvider? services;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         if (TryRunOfflineSmoke(e.Args))
@@ -24,8 +24,16 @@ public partial class App : System.Windows.Application
             return;
         }
         DispatcherUnhandledException += OnDispatcherUnhandledException;
-        services = AppHost.BuildServices();
-        services.GetRequiredService<MainWindow>().Show();
+        try
+        {
+            services = await AppHost.BuildServicesAsync();
+            services.GetRequiredService<MainWindow>().Show();
+        }
+        catch (Exception exception)
+        {
+            MessageBox.Show(exception.ToString(), "RMPP 启动失败", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)

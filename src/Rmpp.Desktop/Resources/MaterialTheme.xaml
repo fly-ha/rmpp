@@ -1,0 +1,119 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System.Windows;assembly=PresentationFramework">
+  <!-- RMPP uses a compact desktop surface while retaining Material control states. -->
+  <SolidColorBrush x:Key="PrimaryBrush" Color="#9F1D20" />
+  <SolidColorBrush x:Key="PrimaryLightBrush" Color="#F7D9D8" />
+  <SolidColorBrush x:Key="SecondaryBrush" Color="#3F6B4B" />
+  <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#EEF0F2" />
+  <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+  <SolidColorBrush x:Key="SurfaceMutedBrush" Color="#F7F8F9" />
+  <SolidColorBrush x:Key="DividerBrush" Color="#D5D9DD" />
+  <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1F2328" />
+  <SolidColorBrush x:Key="TextSecondaryBrush" Color="#5C6670" />
+  <SolidColorBrush x:Key="FocusBrush" Color="#9F1D20" />
+  <SolidColorBrush x:Key="ErrorBrush" Color="#B3261E" />
+
+  <Style x:Key="RmppFocusVisualStyle" TargetType="Control">
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate>
+          <Border BorderBrush="{StaticResource FocusBrush}" BorderThickness="2" CornerRadius="2" SnapsToDevicePixels="True" />
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style TargetType="Control">
+    <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+    <Setter Property="FocusVisualStyle" Value="{StaticResource RmppFocusVisualStyle}" />
+    <Style.Triggers>
+      <!-- 主题颜色不能成为高对比度下唯一的状态提示。 -->
+      <DataTrigger Binding="{Binding Source={x:Static sys:SystemParameters.HighContrast}}" Value="True">
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" />
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+  <Style TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+  <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignTextBox}">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="8,4" />
+    <Setter Property="Margin" Value="0,2,0,2" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style TargetType="ComboBox" BasedOn="{StaticResource MaterialDesignComboBox}">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="8,2" />
+    <Setter Property="Margin" Value="0,2,0,2" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="12,5" />
+    <Setter Property="Margin" Value="2" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style TargetType="ToggleButton">
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Padding" Value="10,4" />
+    <Setter Property="Margin" Value="2" />
+  </Style>
+  <Style TargetType="CheckBox" BasedOn="{StaticResource MaterialDesignCheckBox}">
+    <Setter Property="Margin" Value="0,2,8,2" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style TargetType="ListBox" BasedOn="{StaticResource MaterialDesignListBox}">
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+  </Style>
+  <Style TargetType="TabControl" BasedOn="{StaticResource MaterialDesignTabControl}">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+  </Style>
+  <Style TargetType="TabItem" BasedOn="{StaticResource MaterialDesignTabItem}">
+    <Setter Property="Padding" Value="12,7" />
+    <Setter Property="MinHeight" Value="34" />
+  </Style>
+  <Style TargetType="GroupBox" BasedOn="{StaticResource MaterialDesignGroupBox}">
+    <Setter Property="Margin" Value="0,0,0,8" />
+    <Setter Property="Padding" Value="8" />
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+    <Style.Triggers>
+      <DataTrigger Binding="{Binding Source={x:Static sys:SystemParameters.HighContrast}}" Value="True">
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+  <Style TargetType="ListBoxItem" BasedOn="{StaticResource MaterialDesignListBoxItem}">
+    <Setter Property="Padding" Value="8,5" />
+    <Setter Property="Margin" Value="0,1" />
+  </Style>
+  <Style TargetType="ToolBar" BasedOn="{StaticResource MaterialDesignToolBar}">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+    <Setter Property="Padding" Value="4,2" />
+  </Style>
+  <Style TargetType="Menu" BasedOn="{StaticResource MaterialDesignMenu}">
+    <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
+  </Style>
+  <Style TargetType="MenuItem" BasedOn="{StaticResource MaterialDesignMenuItem}">
+    <Setter Property="Padding" Value="10,6" />
+  </Style>
+  <Style TargetType="DataGrid" BasedOn="{StaticResource MaterialDesignDataGrid}">
+    <Setter Property="RowHeight" Value="32" />
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+  </Style>
+  <Style TargetType="StatusBar" BasedOn="{StaticResource MaterialDesignStatusBar}">
+    <Setter Property="Background" Value="{StaticResource SurfaceMutedBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource DividerBrush}" />
+    <Style.Triggers>
+      <DataTrigger Binding="{Binding Source={x:Static sys:SystemParameters.HighContrast}}" Value="True">
+        <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}" />
+      </DataTrigger>
+    </Style.Triggers>
+  </Style>
+</ResourceDictionary>

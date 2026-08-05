@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Focusable="True" KeyboardNavigation.TabNavigation="Contained">
   <UserControl.Resources><BooleanToVisibilityConverter x:Key="BoolToVisibility"/></UserControl.Resources>
-  <Grid Margin="8">
+  <Grid Margin="10" Background="{DynamicResource SurfaceBrush}">
     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <StackPanel>
-      <TextBlock Text="数据记录" FontWeight="Bold" Visibility="{Binding HasDataSource, Converter={StaticResource BoolToVisibility}}"/>
+      <TextBlock Text="数据记录" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryBrush}" Visibility="{Binding HasDataSource, Converter={StaticResource BoolToVisibility}}"/>
       <WrapPanel Visibility="{Binding HasDataSource, Converter={StaticResource BoolToVisibility}}" Margin="0,5,0,0">
         <Button Content="上一行" Command="{Binding PreviousRowCommand}" Margin="0,0,4,0"/>
         <Button Content="下一行" Command="{Binding NextRowCommand}" Margin="0,0,8,0"/>

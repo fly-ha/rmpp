@@ -5,6 +5,10 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="coverlet.collector" />
+    <!-- WPF BAML 在测试宿主内解析 Material 控件，需复制主题程序集。 -->
+    <PackageReference Include="MaterialDesignThemes" />
+    <PackageReference Include="MaterialDesignColors" />
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" />
     <ProjectReference Include="..\..\src\Rmpp.Desktop\Rmpp.Desktop.csproj" />
   </ItemGroup>
 </Project>

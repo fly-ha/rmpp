@@ -5,9 +5,11 @@
     <ResourceDictionary>
       <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="Resources/Strings.xaml" />
+        <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+        <ResourceDictionary Source="Resources/MaterialTheme.xaml" />
       </ResourceDictionary.MergedDictionaries>
-      <SolidColorBrush x:Key="AccentBrush" Color="#C62828" />
-      <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#E8EAED" />
+      <SolidColorBrush x:Key="AccentBrush" Color="#9F1D20" />
+      <SolidColorBrush x:Key="CanvasBackgroundBrush" Color="#EEF0F2" />
       <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
       <Style TargetType="{x:Type Control}">
         <Setter Property="FontFamily" Value="Microsoft YaHei UI" />

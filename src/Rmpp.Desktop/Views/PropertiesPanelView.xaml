@@ -5,9 +5,19 @@
              xmlns:automation="clr-namespace:System.Windows.Automation;assembly=PresentationCore">
   <UserControl.Resources>
     <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+    <Style TargetType="GroupBox">
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="Padding" Value="8" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceMutedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource DividerBrush}" />
+    </Style>
+    <Style TargetType="TextBlock" x:Key="PropertyFieldLabel">
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+      <Setter Property="Margin" Value="0,3,0,1" />
+    </Style>
   </UserControl.Resources>
-  <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <StackPanel Margin="10" DataContext="{Binding Properties}">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource SurfaceBrush}">
+    <StackPanel Margin="12" DataContext="{Binding Properties}">
       <TextBlock Text="{Binding TypeName}" FontWeight="Bold" FontSize="15" Margin="0,0,0,8"
                  AutomationProperties.Name="{DynamicResource Properties}" />
 
@@ -182,7 +192,7 @@
         </StackPanel>
       </GroupBox>
 
-      <TextBlock Text="{Binding ValidationSummary}" Foreground="OrangeRed" TextWrapping="Wrap" Margin="0,2,0,0" />
+      <TextBlock Text="{Binding ValidationSummary}" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap" Margin="0,2,0,0" />
     </StackPanel>
   </ScrollViewer>
 </UserControl>

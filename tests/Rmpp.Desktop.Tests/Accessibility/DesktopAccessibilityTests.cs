@@ -119,6 +119,12 @@ public sealed class DesktopAccessibilityTests
         Assert.Contains("Microsoft YaHei UI", appXaml, StringComparison.Ordinal);
         Assert.Contains("AutomationProperties.Name", mainWindowXaml, StringComparison.Ordinal);
 
+        // 主题必须能在真实 Application 资源树中加载，避免仅在编译阶段通过。
+        App application = new();
+        application.InitializeComponent();
+        Assert.NotNull(application.Resources["PrimaryBrush"]);
+        Assert.NotNull(application.Resources["MaterialDesignRaisedButton"]);
+
         TextBlock chinese = new()
         {
             Text = "红枫叶定位打印",

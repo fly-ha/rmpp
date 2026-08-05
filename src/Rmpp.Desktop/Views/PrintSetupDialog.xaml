@@ -4,14 +4,15 @@
         xmlns:controls="clr-namespace:Rmpp.Desktop.Controls"
         xmlns:views="clr-namespace:Rmpp.Desktop.Views"
         Title="打印设置与预览" Width="1120" Height="760" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource CanvasBackgroundBrush}"
         KeyboardNavigation.TabNavigation="Cycle" Loaded="OnLoaded">
   <Window.Resources>
     <BooleanToVisibilityConverter x:Key="BooleanToVisibility" />
   </Window.Resources>
-  <Grid Margin="12">
+  <Grid Margin="12" Background="{DynamicResource CanvasBackgroundBrush}">
     <Grid.ColumnDefinitions><ColumnDefinition Width="380"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
     <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-      <StackPanel Margin="0,0,12,0">
+      <StackPanel Margin="0,0,12,0" Background="{DynamicResource SurfaceBrush}">
         <GroupBox Header="打印机与介质" Margin="0,0,0,8">
           <StackPanel Margin="8">
             <DockPanel>
@@ -32,7 +33,7 @@
             <TextBlock Text="分辨率" Margin="0,8,0,0"/>
             <ComboBox x:Name="ResolutionCombo" ItemsSource="{Binding Resolutions}" SelectedItem="{Binding SelectedResolution}" DisplayMemberPath="Key"
                       KeyboardNavigation.TabIndex="2" AutomationProperties.Name="分辨率选择"/>
-            <TextBlock Text="{Binding MediaMismatchText}" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="DarkOrange"/>
+            <TextBlock Text="{Binding MediaMismatchText}" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="{DynamicResource ErrorBrush}"/>
           </StackPanel>
         </GroupBox>
 
